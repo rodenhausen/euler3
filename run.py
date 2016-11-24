@@ -41,9 +41,15 @@ class Interactive(Run):
     def __init__(self, commandProvider):
         Run.__init__(self)
     def run(self):
+        history = []
+        if not os.path.isfile('.history'):
+            with open('.history', 'r') as historyFile:
+                for command in historyFile:
+                    history.append(command)
         while True:
             tap = get_current_tap()
             input = raw_input('euler2 > ')
+            history.append(input)
             command = self.commandProvider.provide(tap, input)
             if command != None:
                 command.run()
@@ -54,3 +60,6 @@ class Interactive(Run):
                     #todo
             else:
                 print "Unrecognized command"
+        with open('.history', 'a') as historyFile:
+            for command in history:
+                historyFile.write(command + "\n")
