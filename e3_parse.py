@@ -6,22 +6,24 @@ Created on Nov 22, 2016
 from autologging import logged
 from pinject import copy_args_to_public_fields
 import re
-from command import Graph
-from command import ShowPossibleWorlds
-from command import UseTap
-from command import NameTap
-from command import AddArticulation
-from command import RemoveArticulation
-from command import LoadTap
-from command import PrintArticulations
-from command import PrintTaxonomies
-from command import PrintTap
+from e3_io import get_config
+from e3_command import Graph
+from e3_command import ShowPossibleWorlds
+from e3_command import UseTap
+from e3_command import NameTap
+from e3_command import AddArticulation
+from e3_command import RemoveArticulation
+from e3_command import LoadTap
+from e3_command import PrintArticulations
+from e3_command import PrintTaxonomies
+from e3_command import PrintTap
 
 @logged               
 class CommandParser(object):
     @copy_args_to_public_fields
     def __init__(self, pattern):
         self.re = re.compile(pattern, re.IGNORECASE)
+        self.config = get_config()
         pass
     def is_command(self, input):
         return self.re.match(input)
@@ -102,7 +104,7 @@ class ShowPossibleWorldsParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, 'show possible worlds')
     def get_command(self, tap, input):
-        return ShowPossibleWorlds(tap)
+        return ShowPossibleWorlds(tap, input)
 
 class GraphParser(CommandParser):
     def __init__(self):

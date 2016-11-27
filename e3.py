@@ -2,13 +2,17 @@
 @author: Thomas
 '''
 import logging, sys
-from run import OneShot
-from run import Interactive
-from parse import CommandProvider
+from e3_run import OneShot
+from e3_run import Interactive
+from e3_parse import CommandProvider
+from e3_io import get_config
 
 def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
-    pinject_config = Config()
+    config = get_config()
+    sys.path.append(config['eulerXPath'])
+    
+    #pinject_config = Config()
     run = None
     if len(sys.argv) > 1:
         run = OneShot(CommandProvider())

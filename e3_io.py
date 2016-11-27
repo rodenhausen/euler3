@@ -5,7 +5,7 @@ Created on Nov 22, 2016
 '''
 import yaml
 import os.path
-from model import Tap
+from e3_model import Tap
 
 def get_config():
     with open('.config', 'r') as f:
@@ -22,6 +22,8 @@ def set_name(name, tap):
             yaml.dump(names, namesFile, default_flow_style=False)
 
 def get_current_tap():
+    if not os.path.isfile('.current_tap'):
+        return None
     with open('.current_tap', 'r') as currentTapFile:
         return get_tap(os.path.join(currentTapFile.readline(), '.tap'))
         
@@ -88,39 +90,3 @@ def get_tap_by_id_or_name(id):
             if doc[id]:
                 return get_tap_by_name(doc[id])
     return get_tap_by_id(id)
-
-class _Getch:
-    """Gets a single character from standard input.  Does not echo to the
-screen."""
-    def __init__(self):
-        try:
-            self.impl = _GetchWindows()
-        except ImportError:
-            self.impl = _GetchUnix()
-
-    def __call__(self): return self.impl()
-
-
-class _GetchUnix:
-    def __init__(self):
-        import tty, sys
-
-    def __call__(self):
-        import sys, tty, termios
-        fd = sys.stdin.fileno()
-        old_settings = termios.tcgetattr(fd)
-        try:
-            tty.setraw(sys.stdin.fileno())
-            ch = sys.stdin.read(1)
-        finally:
-            termios.tcsetattr(fd, termios.TCSADRAIN, old_settings)
-        return ch
-
-
-class _GetchWindows:
-    def __init__(self):
-        import msvcrt
-
-    def __call__(self):
-        import msvcrt
-        return msvcrt.getch()

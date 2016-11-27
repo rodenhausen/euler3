@@ -3,10 +3,13 @@
 '''
 from autologging import logged
 from pinject import copy_args_to_public_fields
-from io import set_name
-from io import get_tap
-from io import store_tap
-from io import set_current_tap
+from e3_io import set_name
+from e3_io import get_tap
+from e3_io import store_tap
+from e3_io import set_current_tap
+import subprocess
+import os
+from e3_io import get_config
 
 class Execution(object):
     def __init__(self, command):
@@ -18,6 +21,7 @@ class Execution(object):
 class Command(object):
     @copy_args_to_public_fields
     def __init__(self, tap):
+        self.config = get_config()
         pass
     def run(self):
         self.__log.debug("run %s" % self.__class__.__name__)
@@ -120,6 +124,13 @@ class ShowPossibleWorlds(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, reasoningReasoner):
         Command.__init__(self, tap)
+        tapFile = os.path.join(tap.get_id(), ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        command = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
+            tap = tapFile, output = tap.get_id());
+        print command
+        subprocess.call(command)
+        print 'called'
     def run(self):
         Command.run(self)
     
