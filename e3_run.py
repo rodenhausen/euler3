@@ -12,6 +12,7 @@ from e3_io import get_current_tap
 import readline
 import os
 from e3_io import get_config
+from subprocess import Popen, PIPE, call
 
 @logged
 class Run(object):
@@ -52,9 +53,11 @@ class Interactive(Run):
             if command != None:
                 command.run()
                 if command.get_output():
-                    print command.get_output()
+                    for output in command.get_output():
+                        print output
                 if command.get_execute_output():
-                    pass
-                    #todo
+                    with open(os.devnull, 'w') as devnull:
+                        for execute in command.get_execute_output():
+                            p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
             else:
                 print "Unrecognized command"

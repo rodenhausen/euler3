@@ -8,10 +8,15 @@ import os.path
 from e3_model import Tap
 
 def get_config():
+    if not os.path.isfile('.config'):
+        raise Exception(".config file not found")
     with open('.config', 'r') as f:
         return yaml.safe_load(f)
 
 def set_name(name, tap):
+    if not os.path.isfile('.names'):
+        with open('.names', "w+") as namesFile:
+            pass
     names = { }
     with open('.names', 'r+') as namesFile:
             doc = yaml.load(namesFile)
@@ -79,14 +84,17 @@ def get_tap_by_id(id):
     return None
 
 def get_tap_by_name(name):
+    if not os.path.isfile('.names'):
+        return None
     with open('.names', 'r') as namesFile:
         doc = yaml.load(namesFile)
         return get_tap_by_id(doc[name])
 
 def get_tap_by_id_or_name(id):
-    with open('.names', 'r') as namesFile:
-        doc = yaml.load(namesFile)
-        if doc:
-            if doc[id]:
-                return get_tap_by_name(doc[id])
+    if os.path.isfile('.names'):
+        with open('.names', 'r') as namesFile:
+            doc = yaml.load(namesFile)
+            if doc:
+                if doc[id]:
+                    return get_tap_by_name(doc[id])
     return get_tap_by_id(id)

@@ -7,7 +7,7 @@ from e3_io import set_name
 from e3_io import get_tap
 from e3_io import store_tap
 from e3_io import set_current_tap
-import subprocess
+from subprocess import Popen, PIPE, call
 import os
 from e3_io import get_config
 
@@ -25,12 +25,23 @@ class Command(object):
         pass
     def run(self):
         self.__log.debug("run %s" % self.__class__.__name__)
-        self.output = None
-        self.executeOutput = None
+        self.output = []
+        self.executeOutput = []
     def get_output(self):
         return self.output
     def get_execute_output(self):
         return self.executeOutput
+    def run_euler(self, label, command, output):
+        with open(os.path.join(output, '%s.stdout' % label), 'w+') as out:
+            with open(os.path.join(output, '%s.stderr' % label), 'w+') as err:
+                with open(os.path.join(output, '%s.returncode' % label), 'w+') as rc:
+                    p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
+                    stdout, stderr = p.communicate()
+                    #print stdout
+                    #print stderr
+                    out.write(stdout)
+                    err.write(stderr)
+                    rc.write('%s' % p.returncode)
     
 @logged 
 class LoadTap(Command):
@@ -42,7 +53,7 @@ class LoadTap(Command):
         tap = get_tap(self.input)
         set_current_tap(tap)
         store_tap(tap)
-        self.output = "Tap: " + tap.get_id()
+        self.output.append("Tap: " + tap.get_id())
         return tap
     
 @logged
@@ -55,7 +66,7 @@ class AddArticulation(Command):
         self.tap.add_articulation(self.articulation)
         set_current_tap(self.tap)
         store_tap(self.tap)
-        self.output = "Tap: " + self.tap.get_id()
+        self.output.append("Tap: " + self.tap.get_id())
         return self.tap
 
 @logged
@@ -68,7 +79,7 @@ class RemoveArticulation(Command):
         self.tap.remove_articulation(self.articulation)
         set_current_tap(self.tap)
         store_tap(self.tap)
-        self.output = "Tap: " + self.tap.get_id()
+        self.output.append("Tap: " + self.tap.get_id())
         return self.tap
     
 @logged
@@ -79,7 +90,7 @@ class NameTap(Command):
     def run(self):
         Command.run(self)
         set_name(self.name, self.tap);
-        self.output = "Tap: " + self.tap.get_id()
+        self.output.append("Tap: " + self.tap.get_id())
         return self.tap
     
 class UseTap(Command):
@@ -88,7 +99,7 @@ class UseTap(Command):
         Command.__init__(self, tap)
     def run(self):
         Command.run(self)
-        self.output = self.tap.__str__()
+        self.output.append(self.tap.__str__())
         return self.tap
             
 class PrintTap(Command):
@@ -97,7 +108,7 @@ class PrintTap(Command):
         Command.__init__(self, tap)
     def run(self):
         Command.run(self)
-        self.output = self.tap.__str__()
+        self.output.append(self.tap.__str__())
         return self.tap
     
 class PrintTaxonomies(Command):
@@ -106,8 +117,8 @@ class PrintTaxonomies(Command):
         Command.__init__(self, tap)
     def run(self):
         Command.run(self)
-        self.output = '\n'.join(self.tap.taxonomyA)
-        self.output += '\n'.join(self.tap.taxonomyB)
+        self.output.append('\n'.join(self.tap.taxonomyA))
+        self.output.append('\n'.join(self.tap.taxonomyB))
         return self.tap
             
 class PrintArticulations(Command):
@@ -116,11 +127,49 @@ class PrintArticulations(Command):
         Command.__init__(self, tap)
     def run(self):
         Command.run(self)
-        self.output = '\n'.join(self.tap.articulations)
-        return self.tap               
+        self.output.append('\n'.join(self.tap.articulations))
+        return self.tap                  
        
 @logged 
 class ShowPossibleWorlds(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap, reasoningReasoner):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        alignCommand = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
+            tap = tapFile, output = output);
+        format = self.config['preferredImageFormat']
+        showCommand = '{eulerExecutable} show -o {output} pw --{format}'.format(eulerExecutable = eulerExecutable, 
+            tap = tapFile, output = output, format = format);
+        self.run_euler("Align", alignCommand, output)
+        self.run_euler("Show", showCommand, output)
+        
+        
+        maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
+        possibleWorldsPath = os.path.join(tapId, "4-PWs")
+        possibleWorldsCount = len([f for f in os.listdir(possibleWorldsPath) if f.endswith('.%s' % format) 
+                                   and os.path.isfile(os.path.join(possibleWorldsPath, f))])
+        if possibleWorldsCount <= maxPossibleWorldsToShow:
+            self.output.append("There are {count} possible worlds. I show them all to you.".format(
+                count = possibleWorldsCount))
+        else:
+            self.output.append("There are {count} possible worlds. I will only show {maxCount} of them to you.".format(
+                count = possibleWorldsCount, maxCount = maxPossibleWorldsToShow))
+        
+        self.executeOutput = []
+        openCount = 0
+        for filename in os.listdir(os.path.join(tapId, "4-PWs")):
+            if filename.endswith(".%s" % format) and openCount < maxPossibleWorldsToShow:
+                openCount += 1
+                self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "4-PWs", filename)))
+        
+@logged 
+class MoreWorldsThan(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, reasoningReasoner):
         Command.__init__(self, tap)
