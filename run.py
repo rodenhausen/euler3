@@ -9,6 +9,7 @@ import pinject
 from pinject_config import Config
 from pinject import copy_args_to_public_fields
 from io import get_current_tap
+import readline
 
 @logged
 class Run(object):
