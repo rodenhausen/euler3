@@ -17,7 +17,7 @@ from e3_command import LoadTap
 from e3_command import PrintArticulations
 from e3_command import PrintTaxonomies
 from e3_command import PrintTap
-from e3_command import MoreWorldsThan
+from e3_command import MoreWorldsOrEqualThan
 
 @logged               
 class CommandParser(object):
@@ -101,13 +101,13 @@ class PrintArticulationsParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
 
-class MoreWorldsThanParser(CommandParser):
+class MoreWorldsOrEqualThanParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'more than (.*) worlds (.*)')
+        CommandParser.__init__(self, '>= (.*) worlds (.*)')
     def get_command(self, tap, input):
         match = self.is_command(input);
         if match:
-            return MoreWorldsThan(tap, match.group(1))
+            return MoreWorldsOrEqualThan(tap, match.group(1))
         else:
             raise Exception('Unrecognized command line')    
 
@@ -115,7 +115,7 @@ class ShowPossibleWorldsParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, 'show possible worlds')
     def get_command(self, tap, input):
-        return ShowPossibleWorlds(tap, input)
+        return ShowPossibleWorlds(tap)
 
 class GraphParser(CommandParser):
     def __init__(self):

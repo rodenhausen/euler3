@@ -133,7 +133,7 @@ class PrintArticulations(Command):
 @logged 
 class ShowPossibleWorlds(Command):
     @copy_args_to_public_fields
-    def __init__(self, tap, reasoningReasoner):
+    def __init__(self, tap):
         Command.__init__(self, tap)
     def run(self):
         Command.run(self)
@@ -145,9 +145,9 @@ class ShowPossibleWorlds(Command):
             tap = tapFile, output = output);
         format = self.config['preferredImageFormat']
         showCommand = '{eulerExecutable} show -o {output} pw --{format}'.format(eulerExecutable = eulerExecutable, 
-            tap = tapFile, output = output, format = format);
+            output = output, format = format);
         self.run_euler("Align", alignCommand, output)
-        self.run_euler("Show", showCommand, output)
+        self.run_euler("ShowPW", showCommand, output)
         
         
         maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
@@ -169,20 +169,31 @@ class ShowPossibleWorlds(Command):
                 self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "4-PWs", filename)))
         
 @logged 
-class MoreWorldsThan(Command):
+class MoreWorldsOrEqualThan(Command):
     @copy_args_to_public_fields
-    def __init__(self, tap, reasoningReasoner):
+    def __init__(self, tap, thanVariable):
         Command.__init__(self, tap)
-        tapFile = os.path.join(tap.get_id(), ".tap")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        command = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
-            tap = tapFile, output = tap.get_id());
-        print command
-        subprocess.call(command)
-        print 'called'
     def run(self):
         Command.run(self)
-    
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        alignCommand = '{eulerExecutable} align {tap} -o {output} -n {thanVariable}'.format(
+            eulerExecutable = eulerExecutable, tap = tapFile, output = output, 
+            thanVariable = self.thanVariable);
+        self.run_euler("Align", alignCommand, output)
+        
+        possibleWorldsPath = os.path.join(tapId, "4-PWs")
+        possibleWorldsCount = len([f for f in os.listdir(possibleWorldsPath) if f.endswith('.%s' % format) 
+                                   and os.path.isfile(os.path.join(possibleWorldsPath, f))])
+        if possibleWorldsCount <= thanVariable:
+            self.output.append("There are less than {thanVariable} possible worlds. There are {count}".format(
+                thanVariable = self.thanVariable, count = possibleWorldsCount))
+        else:
+            self.output.append("There are more than or equal to {thanVariable} possible worlds.".format(
+                thanVariable = self.thanVariable))
+            
 @logged 
 class Graph(Command):
     @copy_args_to_public_fields
@@ -190,3 +201,17 @@ class Graph(Command):
         Command.__init__(self, tap)
     def run(self):
         Command.run(self)
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        format = self.config['preferredImageFormat']
+        showCommand = '{eulerExecutable} show iv {tap} -o {output} --{format}'.format(eulerExecutable = eulerExecutable, 
+            tap = tapFile, output = output, format = format);
+        self.run_euler("ShowIV", showCommand, output)
+        
+        self.output.append("Take a look at the output graph")
+        self.executeOutput = []
+        for filename in os.listdir(os.path.join(tapId, "0-Input")):
+            if filename.endswith(".%s" % format):
+                self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "0-Input", filename)))
