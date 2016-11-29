@@ -184,14 +184,17 @@ class MoreWorldsOrEqualThan(Command):
             thanVariable = self.thanVariable);
         self.run_euler("Align", alignCommand, output)
         
-        possibleWorldsPath = os.path.join(tapId, "4-PWs")
-        possibleWorldsCount = len([f for f in os.listdir(possibleWorldsPath) if f.endswith('.%s' % format) 
-                                   and os.path.isfile(os.path.join(possibleWorldsPath, f))])
-        if possibleWorldsCount <= thanVariable:
-            self.output.append("There are less than {thanVariable} possible worlds. There are {count}".format(
+        aspOutputPath = os.path.join(tapId, "2-ASP-output", '.tap.pw')
+        possibleWorldsCount = 0
+        with open(aspOutputPath, 'r') as aspOutputFile:
+            for line in aspOutputFile:
+                if line.startswith('Possible world '):
+                    possibleWorldsCount += 1
+        if possibleWorldsCount < self.thanVariable:
+            self.output.append("There are < {thanVariable} possible worlds. There are {count}.".format(
                 thanVariable = self.thanVariable, count = possibleWorldsCount))
         else:
-            self.output.append("There are more than or equal to {thanVariable} possible worlds.".format(
+            self.output.append("There are >= {thanVariable} possible worlds.".format(
                 thanVariable = self.thanVariable))
             
 @logged 
@@ -210,7 +213,7 @@ class Graph(Command):
             tap = tapFile, output = output, format = format);
         self.run_euler("ShowIV", showCommand, output)
         
-        self.output.append("Take a look at the output graph")
+        self.output.append("Take a look at the graph")
         self.executeOutput = []
         for filename in os.listdir(os.path.join(tapId, "0-Input")):
             if filename.endswith(".%s" % format):

@@ -103,11 +103,11 @@ class PrintArticulationsParser(CommandParser):
 
 class MoreWorldsOrEqualThanParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '>= (.*) worlds (.*)')
+        CommandParser.__init__(self, '>= (.*) worlds')
     def get_command(self, tap, input):
         match = self.is_command(input);
         if match:
-            return MoreWorldsOrEqualThan(tap, match.group(1))
+            return MoreWorldsOrEqualThan(tap, int(match.group(1)))
         else:
             raise Exception('Unrecognized command line')    
 
@@ -135,7 +135,7 @@ class CommandProvider(object):
                              PrintTapParser(),
                              PrintTaxonomiesParser(),
                              NameTapParser(),
-                             MoreWorldsThanParser()
+                             MoreWorldsOrEqualThanParser()
                              ]
     def provide(self, tap, input):
         for parser in self.commandParsers:
