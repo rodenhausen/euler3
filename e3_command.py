@@ -128,10 +128,10 @@ class PrintArticulations(Command):
     def run(self):
         Command.run(self)
         self.output.append('\n'.join(self.tap.articulations))
-        return self.tap                  
-       
+        return self.tap
+    
 @logged 
-class ShowPossibleWorlds(Command):
+class GraphWorlds(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
         Command.__init__(self, tap)
@@ -169,6 +169,31 @@ class ShowPossibleWorlds(Command):
                 self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "4-PWs", filename)))
         
 @logged 
+class IsConsistent(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        alignCommand = '{eulerExecutable} align {tap} -o {output} --consistency'.format(
+            eulerExecutable = eulerExecutable, tap = tapFile, output = output);
+        self.run_euler("AlignConsistency", alignCommand, output)
+        
+        consistent = False
+        with open(os.path.join(output, "AlignConsistency.stdout"), 'r') as aspOutputFile:
+            for line in aspOutputFile:
+                if line.startswith('Input is consistent'):
+                    consistent = True
+        if not consistent:
+            self.output.append("no")
+        else:
+            self.output.append("yes")
+            
+@logged 
 class MoreWorldsOrEqualThan(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, thanVariable):
@@ -198,6 +223,105 @@ class MoreWorldsOrEqualThan(Command):
                 thanVariable = self.thanVariable))
             
 @logged 
+class PrintFix(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        repairMethod = self.config['preferredRepairMethod']
+        repairCommand = '{eulerExecutable} align {tap} -o {output} --repair={repairMethod}'.format(eulerExecutable = eulerExecutable, 
+            tap = tapFile, output = output, repairMethod = repairMethod);
+        self.run_euler("AlignRepair", repairCommand, output)
+        self.output.append("Suggested repair options")
+        with open(os.path.join(output, "AlignRepair.stdout"), 'r') as aspOutputFile:
+            for line in aspOutputFile:
+                if line.startswith('Repair option'):
+                    self.output.append(line.rstrip())
+                if line.startswith('Possible world'):
+                    self.output = []
+                    self.output.append("The tap is not inconsistent. There is nothing to fix.")
+                    return
+                           
+@logged 
+class GraphInconsistency(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        format = self.config['preferredImageFormat']
+        alignCommand = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
+                            tap = tapFile, output = output);                
+        self.run_euler("Align", alignCommand, output)
+        inconsistent = False
+        with open(os.path.join(output, "Align.stdout"), 'r') as aspOutputFile:
+            for line in aspOutputFile:
+                if line.startswith('Input is inconsistent'):
+                    inconsistent = True
+        
+        showCommand = '{eulerExecutable} show -o {output} inconLat --{format}'.format(eulerExecutable = eulerExecutable, 
+                            output = output, format = format);
+        if inconsistent:
+            self.run_euler("ShowInconLat", showCommand, output)
+            self.output.append("Take a look at the graph")
+            self.executeOutput = []
+            for filename in os.listdir(os.path.join(tapId, "6-Lattices")):
+                if filename.endswith(".%s" % format):
+                    self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "6-Lattices", filename)))
+        else:
+            self.output.append("The tap is not inconsistent. I have nothing to show.")
+            
+@logged 
+class PrintWorlds(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+        tapId = self.tap.get_id()
+        tapFile = os.path.join(tapId, ".tap")
+        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        output = tapId
+        alignCommand = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
+            tap = tapFile, output = output);
+        format = self.config['preferredImageFormat']
+        self.run_euler("Align", alignCommand, output)
+          
+        aspOutputPath = os.path.join(tapId, "2-ASP-output", '.tap.pw')
+        possibleWorlds = []
+        with open(aspOutputPath, 'r') as aspOutputFile:
+            currentWorld = ""
+            for line in aspOutputFile:
+                if len(line.strip()) == 0:
+                    if len(currentWorld) > 0:
+                        possibleWorlds.append(currentWorld.rstrip())
+                        currentWorld = ""
+                else:
+                    if not len(line.strip()) == 0:
+                        currentWorld += line
+            if len(currentWorld) > 0:
+                possibleWorlds.append(currentWorld.rstrip())
+        
+        maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
+        if len(possibleWorlds) <= maxPossibleWorldsToShow:
+            self.output.append("There are {count} possible worlds. I show them all to you.".format(
+                count = len(possibleWorlds)))
+        else:
+            self.output.append("There are {count} possible worlds. I will only show {maxCount} of them to you.".format(
+                count = len(possibleWorlds), maxCount = maxPossibleWorldsToShow))
+        for world in possibleWorlds:
+            self.output.append(world)
+        
+@logged 
 class Graph(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
@@ -218,3 +342,33 @@ class Graph(Command):
         for filename in os.listdir(os.path.join(tapId, "0-Input")):
             if filename.endswith(".%s" % format):
                 self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "0-Input", filename)))
+                @logged 
+class SetCoverage(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+
+@logged 
+class SetRegions(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+
+@logged 
+class SetSiblingDisjointness(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)
+        
+class unsetSiblingDisjointness(Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Command.__init__(self, tap)
+    def run(self):
+        Command.run(self)

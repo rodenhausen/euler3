@@ -8,7 +8,7 @@ from pinject import copy_args_to_public_fields
 import re
 from e3_io import get_config
 from e3_command import Graph
-from e3_command import ShowPossibleWorlds
+from e3_command import GraphWorlds
 from e3_command import UseTap
 from e3_command import NameTap
 from e3_command import AddArticulation
@@ -18,6 +18,10 @@ from e3_command import PrintArticulations
 from e3_command import PrintTaxonomies
 from e3_command import PrintTap
 from e3_command import MoreWorldsOrEqualThan
+from e3_command import IsConsistent
+from e3_command import PrintWorlds
+from e3_command import GraphInconsistency
+from e3_command import PrintFix
 
 @logged               
 class CommandParser(object):
@@ -111,22 +115,46 @@ class MoreWorldsOrEqualThanParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')    
 
-class ShowPossibleWorldsParser(CommandParser):
+class GraphWorldsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'show possible worlds')
+        CommandParser.__init__(self, 'graph worlds')
     def get_command(self, tap, input):
-        return ShowPossibleWorlds(tap)
+        return GraphWorlds(tap)
 
 class GraphParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'graph')
+        CommandParser.__init__(self, 'graph$')
     def get_command(self, tap, input):
         return Graph(tap)
-                                   
+        
+class IsConsistentParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, 'is consistent')
+    def get_command(self, tap, input):
+        return IsConsistent(tap)
+                             
+class PrintWorldsParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, 'print worlds')
+    def get_command(self, tap, input):
+        return PrintWorlds(tap)
+                       
+class GraphInconsistencyParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, 'graph inconsistency')
+    def get_command(self, tap, input):
+        return GraphInconsistency(tap)     
+    
+class PrintFixParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, 'print fix')
+    def get_command(self, tap, input):
+        return PrintFix(tap)    
+                                                              
 class CommandProvider(object):
     def __init__(self):
         #self.commands = Command.__subclasses__()#
-        self.commandParsers = [ ShowPossibleWorldsParser(), 
+        self.commandParsers = [ GraphWorldsParser(), 
                              GraphParser(), 
                              LoadTapParser(),
                              AddArticulationParser(),
@@ -135,7 +163,11 @@ class CommandProvider(object):
                              PrintTapParser(),
                              PrintTaxonomiesParser(),
                              NameTapParser(),
-                             MoreWorldsOrEqualThanParser()
+                             MoreWorldsOrEqualThanParser(),
+                             IsConsistentParser(),
+                             PrintWorldsParser(),
+                             GraphInconsistencyParser(),
+                             PrintFixParser()
                              ]
     def provide(self, tap, input):
         for parser in self.commandParsers:
