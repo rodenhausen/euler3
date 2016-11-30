@@ -7,7 +7,7 @@ from autologging import logged
 from pinject import copy_args_to_public_fields
 import re
 from e3_io import get_config, get_tap_from_id_or_name
-from e3_command import Graph, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
+from e3_command import GraphTap, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
 from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames
 
 @logged               
@@ -205,9 +205,9 @@ class GraphWorldsParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
 
-class GraphParser(CommandParser):
+class GraphTapParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^graph( (\S*))?$')
+        CommandParser.__init__(self, '^graph tap( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -215,7 +215,7 @@ class GraphParser(CommandParser):
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return Graph(tap)
+                return GraphTap(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -289,7 +289,7 @@ class CommandProvider(object):
     def __init__(self):
         #self.commands = Command.__subclasses__()#
         self.commandParsers = [ GraphWorldsParser(), 
-                             GraphParser(), 
+                             GraphTapParser(), 
                              UseTapParser(), 
                              LoadTapParser(),
                              PrintNamesParser(),

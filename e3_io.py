@@ -76,7 +76,7 @@ def store_tap(tap):
     store_tap_to_cleantax(tap)
 
 def store_tap_to_cleantax(tap):
-    tapFile = os.path.join(tap.get_id(), "inputFile")
+    tapFile = os.path.join(tap.get_id(), ".cleantax")
     if not os.path.isdir(tap.get_id()):
         os.mkdir(tap.get_id())
     with open(tapFile, 'w') as f:        
