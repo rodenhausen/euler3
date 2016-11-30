@@ -66,15 +66,20 @@ class AddArticulation(Command):
 @logged
 class RemoveArticulation(Command):
     @copy_args_to_public_fields
-    def __init__(self, tap, articulation):
+    def __init__(self, tap, articulationIndex):
         Command.__init__(self)
     def run(self):
         Command.run(self)
-        self.tap.remove_articulation(self.articulation)
+        try:
+            self.tap.remove_articulation(self.articulationIndex)
+        except Exception as e:
+            #print e
+            self.output.append("Could not find an articulation with the given index")
+            return
         set_current_tap(self.tap)
         store_tap(self.tap)
         self.output.append("Tap: " + get_tap_id_and_name(self.tap))
-    
+                
 @logged
 class NameTap(Command):
     @copy_args_to_public_fields
@@ -145,7 +150,7 @@ class PrintArticulations(Command):
     def run(self):
         Command.run(self)        
         indices = ['']
-        for x in range(1, len(self.tap.articulations) - 1):
+        for x in range(1, len(self.tap.articulations)):
             indices.append(str(x) + ". ")
         articulationLines = [x + y for x, y in zip(indices, self.tap.articulations)]
         self.output.append('\n'.join(articulationLines))

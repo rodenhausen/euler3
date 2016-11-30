@@ -11,11 +11,8 @@ class Tap(object):
         pass
     def add_articulation(self, articulation):
         self.articulations.append(articulation)
-    def remove_articulation(self, articulation):
-        if articulation.isdigit():
-            del self.articulations[int(articulation)]
-        else:
-            self.articulations.remove(articulation)            
+    def remove_articulation(self, articulationIndex):
+        del self.articulations[int(articulationIndex)]
     def __str__(self, *args, **kwargs):
         indices = ['']
         for x in range(1, len(self.articulations) - 1):

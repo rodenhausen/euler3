@@ -158,6 +158,9 @@ class MoreWorldsOrEqualThanParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))
             return MoreWorldsOrEqualThan(tap, int(match.group(1)))
         else:
             raise Exception('Unrecognized command line')
@@ -168,6 +171,9 @@ class GraphWorldsParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return GraphWorlds(tap)
         else:
             raise Exception('Unrecognized command line')
@@ -178,6 +184,9 @@ class GraphParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return Graph(tap)
         else:
             raise Exception('Unrecognized command line')
@@ -188,6 +197,9 @@ class IsConsistentParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return IsConsistent(tap)
         else:
             raise Exception('Unrecognized command line')
@@ -198,6 +210,9 @@ class PrintWorldsParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return PrintWorlds(tap)
         else:
             raise Exception('Unrecognized command line')
@@ -208,6 +223,9 @@ class GraphInconsistencyParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return GraphInconsistency(tap)
         else:
             raise Exception('Unrecognized command line')   
@@ -218,6 +236,9 @@ class PrintFixParser(CommandParser):
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return PrintFix(tap)
         else:
             raise Exception('Unrecognized command line')
