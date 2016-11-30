@@ -8,7 +8,7 @@ from autologging import logged
 import pinject
 from pinject_config import Config
 from pinject import copy_args_to_public_fields
-from e3_io import get_current_tap
+from e3_io import get_current_tap, get_tap_id_and_name
 import readline
 import os
 from e3_io import get_config
@@ -47,7 +47,7 @@ class Interactive(Run):
     def run(self):
         current_tap = get_current_tap()
         if current_tap:
-            print "Tap: %s" % current_tap.get_id()
+            print "Tap: %s" % get_tap_id_and_name(current_tap)
         else:
             print "Tap: None"
         while True:

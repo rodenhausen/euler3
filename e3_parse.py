@@ -8,7 +8,7 @@ from pinject import copy_args_to_public_fields
 import re
 from e3_io import get_config, get_tap_from_id_or_name
 from e3_command import Graph, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
-from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix
+from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames
 
 @logged               
 class CommandParser(object):
@@ -26,7 +26,7 @@ class LoadTapParser(CommandParser):
     def __init__(self):
         #example:
         #load tap abstract.txt
-        CommandParser.__init__(self, '^load tap (.*)$')
+        CommandParser.__init__(self, '^load tap (\S*)$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -40,7 +40,7 @@ class AddArticulationParser(CommandParser):
         #add articulation [1.A equals 2.B]
         #add articulation [1.A equals 2.B] 2312842819299391
         #add articulation [1.A equals 2.B] my_tap_name
-        CommandParser.__init__(self, '^add articulation (\[.*\])( (.*))?$')
+        CommandParser.__init__(self, '^add articulation (\[.*\])( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -57,7 +57,7 @@ class RemoveArticulationParser(CommandParser):
         #remove articulation 1
         #remove articulation 1 2312842819299391
         #remove articulation 1 my_tap_name
-        CommandParser.__init__(self, '^remove articulation (\d+)( (.*))?$')
+        CommandParser.__init__(self, '^remove articulation (\d+)( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -70,7 +70,7 @@ class RemoveArticulationParser(CommandParser):
 
 class NameTapParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^name tap (.*)( (.*))?$')
+        CommandParser.__init__(self, '^name tap (\S*)( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input);
         if match:
@@ -80,10 +80,42 @@ class NameTapParser(CommandParser):
             return NameTap(tap, match.group(1))
         else:
             raise Exception('Unrecognized command line')
+
+class PrintNamesParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^print names$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input);
+        if match:
+            return PrintNames()
+        else:
+            raise Exception('Unrecognized command line')
+
+class ClearNamesParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^clear names$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input);
+        if match:
+            return ClearNames()
+        else:
+            raise Exception('Unrecognized command line')
+
+
+class UseTapParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^use tap (\S+)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input);
+        if match:
+            tap = get_tap_from_id_or_name(match.group(1))
+            return UseTap(tap)
+        else:
+            raise Exception('Unrecognized command line')
         
 class PrintTapParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^print tap( (.*))?$')
+        CommandParser.__init__(self, '^print tap( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -96,7 +128,7 @@ class PrintTapParser(CommandParser):
     
 class PrintTaxonomiesParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^print taxonomies( (.*))?$')
+        CommandParser.__init__(self, '^print taxonomies( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -109,7 +141,7 @@ class PrintTaxonomiesParser(CommandParser):
          
 class PrintArticulationsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^print articulations( (.*))?$')
+        CommandParser.__init__(self, '^print articulations( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)    
         if match:
@@ -122,7 +154,7 @@ class PrintArticulationsParser(CommandParser):
 
 class MoreWorldsOrEqualThanParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^>= (.*) worlds( (.*))?$')
+        CommandParser.__init__(self, '^>= (\d+) worlds( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -132,7 +164,7 @@ class MoreWorldsOrEqualThanParser(CommandParser):
 
 class GraphWorldsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^graph worlds (.*)$')
+        CommandParser.__init__(self, '^graph worlds( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -142,7 +174,7 @@ class GraphWorldsParser(CommandParser):
 
 class GraphParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^graph (.*)$')
+        CommandParser.__init__(self, '^graph( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -152,7 +184,7 @@ class GraphParser(CommandParser):
         
 class IsConsistentParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^is consistent (.*)$')
+        CommandParser.__init__(self, '^is consistent( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -162,7 +194,7 @@ class IsConsistentParser(CommandParser):
                              
 class PrintWorldsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^print worlds (.*)$')
+        CommandParser.__init__(self, '^print worlds( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -172,7 +204,7 @@ class PrintWorldsParser(CommandParser):
                        
 class GraphInconsistencyParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^graph inconsistency (.*)$')
+        CommandParser.__init__(self, '^graph inconsistency( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -182,7 +214,7 @@ class GraphInconsistencyParser(CommandParser):
     
 class PrintFixParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '^print fix (.*)$')
+        CommandParser.__init__(self, '^print fix( (\S*))?$')
     def get_command(self, current_tap, input):
         match = self.is_command(input)
         if match:
@@ -195,7 +227,10 @@ class CommandProvider(object):
         #self.commands = Command.__subclasses__()#
         self.commandParsers = [ GraphWorldsParser(), 
                              GraphParser(), 
+                             UseTapParser(), 
                              LoadTapParser(),
+                             PrintNamesParser(),
+                             ClearNamesParser(),
                              AddArticulationParser(),
                              RemoveArticulationParser(),
                              PrintArticulationsParser(),

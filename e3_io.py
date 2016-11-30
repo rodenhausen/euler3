@@ -26,6 +26,26 @@ def set_name(name, tap):
             names[name] = tap.get_id()
             yaml.dump(names, namesFile, default_flow_style=False)
 
+def get_names():
+    names = []
+    if os.path.isfile('.names'):
+        with open('.names', 'r') as namesFile:
+            doc = yaml.load(namesFile)
+            if doc:
+                for key, value in doc.items():
+                    names.append(key + " = " + value)
+    return names       
+
+def clear_names():
+    with open('.names', 'w'): pass
+
+def get_tap_id_and_name(tap):
+    name = get_tap_name(tap.get_id())
+    if name:
+        return name + " = " + tap.get_id()
+    else:
+        return tap.get_id()
+
 def get_current_tap():
     if not os.path.isfile('.current_tap'):
         return None
@@ -132,17 +152,33 @@ def get_tap_from_cleantax(cleanTaxFile):
     return Tap(config['defaultIsCoverage'], config['defaultIsSiblingDisjointness'], config['defaultRegions'], taxonomyA, taxonomyB, articulations)
 
 def get_tap_from_name(name):
-    if not os.path.isfile('.names'):
-        return None
-    with open('.names', 'r') as namesFile:
-        doc = yaml.load(namesFile)
-        return get_tap(doc[name])
+    id = get_tap_id(name)
+    if id:
+        return get_tap(id)
+    return None
 
 def get_tap_from_id_or_name(id):
+    name = get_tap_name(id)
+    if name:
+        return get_tap_from_name(name)
+    else:
+        return get_tap(id)
+
+def get_tap_id(name):
     if os.path.isfile('.names'):
         with open('.names', 'r') as namesFile:
             doc = yaml.load(namesFile)
             if doc:
-                if doc[id]:
-                    return get_tap_from_name(doc[id])
-    return get_tap(id)
+                if doc[name]:
+                    return doc[name]
+    return None
+
+def get_tap_name(id):
+    if os.path.isfile('.names'):
+        with open('.names', 'r') as namesFile:
+            doc = yaml.load(namesFile)
+            if doc:
+                for key, value in doc.items():
+                    if value == id:
+                        return key
+    return None

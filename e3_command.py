@@ -3,7 +3,7 @@
 '''
 from autologging import logged
 from pinject import copy_args_to_public_fields
-from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_current_tap, get_config
+from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_current_tap, get_config, get_tap_id_and_name, get_names, clear_names
 from subprocess import Popen, PIPE, call
 import os
 
@@ -49,8 +49,7 @@ class LoadTap(Command):
         tap = get_tap_from_cleantax(self.cleanTaxFile)
         set_current_tap(tap)
         store_tap(tap)
-        self.output.append("Tap: " + tap.get_id())
-        return tap
+        self.output.append("Tap: " + get_tap_id_and_name(tap))
     
 @logged
 class AddArticulation(Command):
@@ -62,8 +61,7 @@ class AddArticulation(Command):
         self.tap.add_articulation(self.articulation)
         set_current_tap(self.tap)
         store_tap(self.tap)
-        self.output.append("Tap: " + self.tap.get_id())
-        return self.tap
+        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
 
 @logged
 class RemoveArticulation(Command):
@@ -75,8 +73,7 @@ class RemoveArticulation(Command):
         self.tap.remove_articulation(self.articulation)
         set_current_tap(self.tap)
         store_tap(self.tap)
-        self.output.append("Tap: " + self.tap.get_id())
-        return self.tap
+        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
     
 @logged
 class NameTap(Command):
@@ -86,8 +83,7 @@ class NameTap(Command):
     def run(self):
         Command.run(self)
         set_name(self.name, self.tap);
-        self.output.append("Tap: " + self.tap.get_id())
-        return self.tap
+        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
     
 class UseTap(Command):
     @copy_args_to_public_fields
@@ -95,9 +91,28 @@ class UseTap(Command):
         Command.__init__(self)
     def run(self):
         Command.run(self)
-        self.output.append(self.tap.__str__())
-        return self.tap
-            
+        if self.tap:
+            self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+    
+class PrintNames(Command):
+    @copy_args_to_public_fields
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        Command.run(self)
+        names = get_names()
+        if names:
+            self.output.append('\n'.join(names))
+    
+class ClearNames(Command):
+    @copy_args_to_public_fields
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        Command.run(self)
+        clear_names()
+        self.output.append("Names are cleared")
+    
 class PrintTap(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
@@ -105,7 +120,6 @@ class PrintTap(Command):
     def run(self):
         Command.run(self)
         self.output.append(self.tap.__str__())
-        return self.tap
     
 class PrintTaxonomies(Command):
     @copy_args_to_public_fields
@@ -123,7 +137,6 @@ class PrintTaxonomies(Command):
             indices.append(str(x) + ". ")
         taxonomyBLines = [x + y for x, y in zip(indices, self.tap.taxonomyB)]
         self.output.append('\n'.join(taxonomyBLines))
-        return self.tap
             
 class PrintArticulations(Command):
     @copy_args_to_public_fields
@@ -136,7 +149,6 @@ class PrintArticulations(Command):
             indices.append(str(x) + ". ")
         articulationLines = [x + y for x, y in zip(indices, self.tap.articulations)]
         self.output.append('\n'.join(articulationLines))
-        return self.tap
     
 @logged 
 class GraphWorlds(Command):
