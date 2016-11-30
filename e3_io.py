@@ -73,9 +73,10 @@ def store_tap(tap):
         f.write('\n')
         for line in tap.articulations:
             f.write(line + '\n')
+    store_tap_to_cleantax(tap)
 
 def store_tap_to_cleantax(tap):
-    tapFile = os.path.join(tap.get_id(), ".tap")
+    tapFile = os.path.join(tap.get_id(), "inputFile")
     if not os.path.isdir(tap.get_id()):
         os.mkdir(tap.get_id())
     with open(tapFile, 'w') as f:        
@@ -157,12 +158,14 @@ def get_tap_from_name(name):
         return get_tap(id)
     return None
 
-def get_tap_from_id_or_name(id):
-    name = get_tap_name(id)
-    if name:
-        return get_tap_from_name(name)
+def get_tap_from_id_or_name(name_or_id):
+    tap = get_tap_from_name(name_or_id)
+    if not tap:
+        tap = get_tap(name_or_id)
+    if not tap:
+        return None
     else:
-        return get_tap(id)
+        return tap
 
 def get_tap_id(name):
     if os.path.isfile('.names'):

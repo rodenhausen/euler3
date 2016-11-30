@@ -46,8 +46,11 @@ class AddArticulationParser(CommandParser):
         if match:
             tap = current_tap
             if match.group(2) and match.group(3):
-                tap = get_tap_from_id_or_name(match.group(3))            
-            return AddArticulation(tap, match.group(1))
+                tap = get_tap_from_id_or_name(match.group(3))  
+            if tap:          
+                return AddArticulation(tap, match.group(1))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
 
@@ -64,7 +67,10 @@ class RemoveArticulationParser(CommandParser):
             tap = current_tap
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))
-            return RemoveArticulation(tap, match.group(1))
+            if tap:
+                return RemoveArticulation(tap, match.group(1))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
 
@@ -77,7 +83,10 @@ class NameTapParser(CommandParser):
             tap = current_tap
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))
-            return NameTap(tap, match.group(1))
+            if tap:
+                return NameTap(tap, match.group(1))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
 
@@ -109,7 +118,10 @@ class UseTapParser(CommandParser):
         match = self.is_command(input);
         if match:
             tap = get_tap_from_id_or_name(match.group(1))
-            return UseTap(tap)
+            if tap:
+                return UseTap(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(1))
         else:
             raise Exception('Unrecognized command line')
         
@@ -122,7 +134,10 @@ class PrintTapParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return PrintTap(tap)
+            if tap:
+                return PrintTap(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
     
@@ -135,7 +150,10 @@ class PrintTaxonomiesParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return PrintTaxonomies(tap)
+            if tap:
+                return PrintTaxonomies(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')   
          
@@ -148,7 +166,10 @@ class PrintArticulationsParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return PrintArticulations(tap)
+            if tap:
+                return PrintArticulations(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
 
@@ -161,7 +182,10 @@ class MoreWorldsOrEqualThanParser(CommandParser):
             tap = current_tap
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))
-            return MoreWorldsOrEqualThan(tap, int(match.group(1)))
+            if tap:
+                return MoreWorldsOrEqualThan(tap, int(match.group(1)))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
 
@@ -174,7 +198,10 @@ class GraphWorldsParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return GraphWorlds(tap)
+            if tap:
+                return GraphWorlds(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
 
@@ -187,7 +214,10 @@ class GraphParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return Graph(tap)
+            if tap:
+                return Graph(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
         
@@ -200,7 +230,10 @@ class IsConsistentParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return IsConsistent(tap)
+            if tap:
+                return IsConsistent(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
                              
@@ -213,7 +246,10 @@ class PrintWorldsParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return PrintWorlds(tap)
+            if tap:
+                return PrintWorlds(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
                        
@@ -226,7 +262,10 @@ class GraphInconsistencyParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return GraphInconsistency(tap)
+            if tap:
+                return GraphInconsistency(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')   
     
@@ -239,7 +278,10 @@ class PrintFixParser(CommandParser):
             tap = current_tap
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
-            return PrintFix(tap)
+            if tap:
+                return PrintFix(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
                                                               

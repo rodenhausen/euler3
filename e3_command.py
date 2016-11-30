@@ -108,6 +108,8 @@ class PrintNames(Command):
         names = get_names()
         if names:
             self.output.append('\n'.join(names))
+        else:
+            self.output.append('No names recorded.')
     
 class ClearNames(Command):
     @copy_args_to_public_fields
@@ -163,17 +165,25 @@ class GraphWorlds(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
-        alignCommand = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
-            tap = tapFile, output = output);
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = eulerExecutable, 
+            cleantax = cleantaxFile, output = output);
         format = self.config['preferredImageFormat']
+        self.run_euler("Align", alignCommand, output)
+        inconsistent = False
+        with open(os.path.join(output, "Align.stdout"), 'r') as aspOutputFile:
+            for line in aspOutputFile:
+                if line.startswith('Input is inconsistent'):
+                    inconsistent = True
+        
+        if inconsistent:
+            self.output.append("The tap is inconsistent")
+            return
         showCommand = '{eulerExecutable} show -o {output} pw --{format}'.format(eulerExecutable = eulerExecutable, 
             output = output, format = format);
-        self.run_euler("Align", alignCommand, output)
         self.run_euler("ShowPW", showCommand, output)
-        
         
         maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
         possibleWorldsPath = os.path.join(tapId, "4-PWs")
@@ -201,11 +211,11 @@ class IsConsistent(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
-        alignCommand = '{eulerExecutable} align {tap} -o {output} --consistency'.format(
-            eulerExecutable = eulerExecutable, tap = tapFile, output = output);
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output} --consistency'.format(
+            eulerExecutable = eulerExecutable, cleantax = cleantaxFile, output = output);
         self.run_euler("AlignConsistency", alignCommand, output)
         
         consistent = False
@@ -226,11 +236,11 @@ class MoreWorldsOrEqualThan(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
-        alignCommand = '{eulerExecutable} align {tap} -o {output} -n {thanVariable}'.format(
-            eulerExecutable = eulerExecutable, tap = tapFile, output = output, 
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output} -n {thanVariable}'.format(
+            eulerExecutable = eulerExecutable, cleantax = cleantaxFile, output = output, 
             thanVariable = self.thanVariable);
         self.run_euler("Align", alignCommand, output)
         
@@ -255,12 +265,12 @@ class PrintFix(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
         repairMethod = self.config['preferredRepairMethod']
-        repairCommand = '{eulerExecutable} align {tap} -o {output} --repair={repairMethod}'.format(eulerExecutable = eulerExecutable, 
-            tap = tapFile, output = output, repairMethod = repairMethod);
+        repairCommand = '{eulerExecutable} align {cleantax} -o {output} --repair={repairMethod}'.format(eulerExecutable = eulerExecutable, 
+            cleantax = cleantaxFile, output = output, repairMethod = repairMethod);
         self.run_euler("AlignRepair", repairCommand, output)
         self.output.append("Suggested repair options")
         with open(os.path.join(output, "AlignRepair.stdout"), 'r') as aspOutputFile:
@@ -280,12 +290,12 @@ class GraphInconsistency(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
         format = self.config['preferredImageFormat']
-        alignCommand = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
-                            tap = tapFile, output = output);                
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = eulerExecutable, 
+                            cleantax = cleantaxFile, output = output);                
         self.run_euler("Align", alignCommand, output)
         inconsistent = False
         with open(os.path.join(output, "Align.stdout"), 'r') as aspOutputFile:
@@ -313,11 +323,11 @@ class PrintWorlds(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
-        alignCommand = '{eulerExecutable} align {tap} -o {output}'.format(eulerExecutable = eulerExecutable, 
-            tap = tapFile, output = output);
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = eulerExecutable, 
+            cleantax = cleantaxFile, output = output);
         format = self.config['preferredImageFormat']
         self.run_euler("Align", alignCommand, output)
           
@@ -354,12 +364,12 @@ class Graph(Command):
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
-        tapFile = os.path.join(tapId, ".tap")
+        cleantaxFile = os.path.join(tapId, "inputFile")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         output = tapId
         format = self.config['preferredImageFormat']
-        showCommand = '{eulerExecutable} show iv {tap} -o {output} --{format}'.format(eulerExecutable = eulerExecutable, 
-            tap = tapFile, output = output, format = format);
+        showCommand = '{eulerExecutable} show iv {cleantax} -o {output} --{format}'.format(eulerExecutable = eulerExecutable, 
+            cleantax = cleantaxFile, output = output, format = format);
         self.run_euler("ShowIV", showCommand, output)
         
         self.output.append("Take a look at the graph")
