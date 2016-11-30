@@ -62,6 +62,9 @@ class Interactive(Run):
                 if command.get_execute_output():
                     with open(os.devnull, 'w') as devnull:
                         for execute in command.get_execute_output():
-                            p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
+                            if execute == 'Exit':
+                                sys.exit()
+                            else:
+                                p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
             else:
                 print "Unrecognized command"

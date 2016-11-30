@@ -6,6 +6,7 @@ from pinject import copy_args_to_public_fields
 from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_current_tap, get_config, get_tap_id_and_name, get_names, clear_names
 from subprocess import Popen, PIPE, call
 import os
+import e3_parse
 
 class Execution(object):
     def __init__(self, command):
@@ -18,11 +19,11 @@ class Command(object):
     @copy_args_to_public_fields
     def __init__(self):
         self.config = get_config()
+        self.output = []
+        self.executeOutput = []
         pass
     def run(self):
         self.__log.debug("run %s" % self.__class__.__name__)
-        self.output = []
-        self.executeOutput = []
     def get_output(self):
         return self.output
     def get_execute_output(self):
@@ -38,6 +39,27 @@ class Command(object):
                     out.write(stdout)
                     err.write(stderr)
                     rc.write('%s' % p.returncode)
+                    
+@logged 
+class Bye(Command):
+    @copy_args_to_public_fields
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        self.output.append("See you soon!")
+        self.executeOutput.append("Exit")
+        
+@logged 
+class Help(Command):
+    @copy_args_to_public_fields
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        Command.run(self)
+        for commandParser in e3_parse.commandParsers:
+            help = commandParser.get_help()
+            if help:
+                self.output.append(commandParser.get_help())
     
 @logged 
 class LoadTap(Command):

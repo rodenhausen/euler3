@@ -8,7 +8,7 @@ from pinject import copy_args_to_public_fields
 import re
 from e3_io import get_config, get_tap_from_id_or_name
 from e3_command import GraphTap, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
-from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames
+from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames, Help, Bye
 
 @logged               
 class CommandParser(object):
@@ -21,6 +21,34 @@ class CommandParser(object):
         return self.re.match(input)
     def get_command(self, current_tap, input):
         pass
+    def get_help(self):
+        pass
+    
+@logged               
+class ByeParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^bye$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return Bye()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "bye\t\t\t\t\t\t\tExit the euler2 tool"
+    
+@logged               
+class HelpParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^help$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return Help()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "help\t\t\t\t\t\t\tShows this help"
 
 class LoadTapParser(CommandParser):
     def __init__(self):
@@ -33,6 +61,8 @@ class LoadTapParser(CommandParser):
             return LoadTap(match.group(1))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "load tap <cleantax file>\t\t\t\tLoads a tap from a cleantax file"
 
 class AddArticulationParser(CommandParser):
     def __init__(self):
@@ -53,6 +83,8 @@ class AddArticulationParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "add articulation <articulation> [<tap>]\t\t\tAdds <articulation> to the current tap or the optionally provided <tap>"
 
 class RemoveArticulationParser(CommandParser):
     def __init__(self):
@@ -73,6 +105,8 @@ class RemoveArticulationParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "remove articulation <articulation_index> [<tap>]\tRemoves articulation with index <articulation_index> from the current tap or the optionally provided <tap>"
 
 class NameTapParser(CommandParser):
     def __init__(self):
@@ -89,6 +123,8 @@ class NameTapParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "name tap <name> [<tap>]\t\t\t\t\tNames the current tap or the optionally provided <tap> as <name>"
 
 class PrintNamesParser(CommandParser):
     def __init__(self):
@@ -99,6 +135,8 @@ class PrintNamesParser(CommandParser):
             return PrintNames()
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "print names\t\t\t\t\t\tShows all stored names and their corresponding taps"
 
 class ClearNamesParser(CommandParser):
     def __init__(self):
@@ -109,7 +147,8 @@ class ClearNamesParser(CommandParser):
             return ClearNames()
         else:
             raise Exception('Unrecognized command line')
-
+    def get_help(self):
+        return "clear names\t\t\t\t\t\tRemoves all stored named"
 
 class UseTapParser(CommandParser):
     def __init__(self):
@@ -124,7 +163,9 @@ class UseTapParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(1))
         else:
             raise Exception('Unrecognized command line')
-        
+    def get_help(self):
+        return "use tap <tap>\t\t\t\t\t\tMakes <tap> the current tap"
+            
 class PrintTapParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print tap( (\S*))?$')
@@ -140,7 +181,9 @@ class PrintTapParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
-    
+    def get_help(self):
+        return "print tap [<tap>]\t\t\t\t\tPrints the current tap or the optionally provided <tap>"
+        
 class PrintTaxonomiesParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print taxonomies( (\S*))?$')
@@ -156,6 +199,8 @@ class PrintTaxonomiesParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')   
+    def get_help(self):
+        return "print taxonomies [<tap>]\t\t\t\tPrints the taxonomies of the current tap or the optionally provided <tap>"
          
 class PrintArticulationsParser(CommandParser):
     def __init__(self):
@@ -172,6 +217,8 @@ class PrintArticulationsParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "print articulations [<tap>]\t\t\t\tPrints the articulations of the current tap or the optionally provided <tap>"
 
 class MoreWorldsOrEqualThanParser(CommandParser):
     def __init__(self):
@@ -188,6 +235,8 @@ class MoreWorldsOrEqualThanParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(3))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return ">= <count> worlds [<tap>]\t\t\t\tChecks if there are more than or equal than count number of possible worlds in the current tap or the optionally provided <tap>"
 
 class GraphWorldsParser(CommandParser):
     def __init__(self):
@@ -204,6 +253,8 @@ class GraphWorldsParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "graph worlds [<tap>]\t\t\t\t\tCreates graph visualizations of the possible worlds, if any exist, for the current tap or the optionally provided <tap>"
 
 class GraphTapParser(CommandParser):
     def __init__(self):
@@ -220,6 +271,8 @@ class GraphTapParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "graph tap [<tap>]\t\t\t\t\tCreates a graph visualization of the current tap or the optionally provided <tap>"
         
 class IsConsistentParser(CommandParser):
     def __init__(self):
@@ -236,6 +289,8 @@ class IsConsistentParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "is consistent [<tap>]\t\t\t\t\tChecks the consistency of the current tap or the optionally provided <tap>"
                              
 class PrintWorldsParser(CommandParser):
     def __init__(self):
@@ -252,6 +307,8 @@ class PrintWorldsParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "print worlds [<tap>]\t\t\t\t\tPrints the possible worlds, if any exist, of the current tap or the optionally provided <tap>"
                        
 class GraphInconsistencyParser(CommandParser):
     def __init__(self):
@@ -268,6 +325,8 @@ class GraphInconsistencyParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')   
+    def get_help(self):
+        return "graph inconsistency [<tap>]\t\t\t\tCreates a graph visualization of the inconsistency, if any exists, for the current tap or the optionally provided <tap>"
     
 class PrintFixParser(CommandParser):
     def __init__(self):
@@ -284,29 +343,35 @@ class PrintFixParser(CommandParser):
                 raise Exception('Tap %s not found' % match.group(2))
         else:
             raise Exception('Unrecognized command line')
-                                                              
+    def get_help(self):
+        return "print fix [<tap>]\t\t\t\t\tPrints a suggested fix of the inconsistency, if any exists, for the current tap or the optionally provided <tap>"
+                  
+commandParsers = [  ByeParser(),
+                    HelpParser(), 
+                    LoadTapParser(),
+                    PrintTapParser(),
+                    PrintTaxonomiesParser(),
+                    PrintArticulationsParser(),
+                    AddArticulationParser(),
+                    RemoveArticulationParser(),
+                    NameTapParser(),
+                    ClearNamesParser(),
+                    PrintNamesParser(),
+                    UseTapParser(), 
+                    GraphTapParser(), 
+                    IsConsistentParser(),
+                    MoreWorldsOrEqualThanParser(),
+                    GraphWorldsParser(), 
+                    PrintWorldsParser(),
+                    GraphInconsistencyParser(),
+                    PrintFixParser()
+                ]              
+                                                
 class CommandProvider(object):
     def __init__(self):
         #self.commands = Command.__subclasses__()#
-        self.commandParsers = [ GraphWorldsParser(), 
-                             GraphTapParser(), 
-                             UseTapParser(), 
-                             LoadTapParser(),
-                             PrintNamesParser(),
-                             ClearNamesParser(),
-                             AddArticulationParser(),
-                             RemoveArticulationParser(),
-                             PrintArticulationsParser(),
-                             PrintTapParser(),
-                             PrintTaxonomiesParser(),
-                             NameTapParser(),
-                             MoreWorldsOrEqualThanParser(),
-                             IsConsistentParser(),
-                             PrintWorldsParser(),
-                             GraphInconsistencyParser(),
-                             PrintFixParser()
-                             ]
+        pass
     def provide(self, current_tap, input):
-        for parser in self.commandParsers:
+        for parser in commandParsers:
             if parser.is_command(input):
                return parser.get_command(current_tap, input)
