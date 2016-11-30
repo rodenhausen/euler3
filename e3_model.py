@@ -7,7 +7,7 @@ import hashlib
 
 class Tap(object):
     @copy_args_to_public_fields
-    def __init__(self, taxonomyA, taxonomyB, articulations):
+    def __init__(self, isCoverage, isSiblingDisjointness, regions, taxonomyA, taxonomyB, articulations):
         pass
     def add_articulation(self, articulation):
         self.articulations.append(articulation)
@@ -15,7 +15,7 @@ class Tap(object):
         if articulation.isdigit():
             del self.articulations[int(articulation)]
         else:
-            self.articulations.remove(articulation)
+            self.articulations.remove(articulation)            
     def __str__(self, *args, **kwargs):
         indices = ['']
         for x in range(1, len(self.articulations) - 1):
@@ -29,8 +29,8 @@ class Tap(object):
         for x in range(1, len(self.taxonomyB) - 1):
             indices.append(str(x) + ". ")
         taxonomyBLines = [x + y for x, y in zip(indices, self.taxonomyB)]
-        return '\n\n'.join(['\n'.join(taxonomyALines), '\n'.join(taxonomyBLines), '\n'.join(articulationLines)])
-    
+        return ('isCoverage:' + str(self.isCoverage) + '\nisSiblingDisjontness:' + str(self.isSiblingDisjointness) + '\nRegions:' + self.regions + '\n' + 
+                '\n\n'.join(['\n'.join(taxonomyALines), '\n'.join(taxonomyBLines), '\n'.join(articulationLines)]))
     def get_id(self):
         return hashlib.sha1(self.__str__()).hexdigest()
     

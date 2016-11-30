@@ -6,22 +6,9 @@ Created on Nov 22, 2016
 from autologging import logged
 from pinject import copy_args_to_public_fields
 import re
-from e3_io import get_config
-from e3_command import Graph
-from e3_command import GraphWorlds
-from e3_command import UseTap
-from e3_command import NameTap
-from e3_command import AddArticulation
-from e3_command import RemoveArticulation
-from e3_command import LoadTap
-from e3_command import PrintArticulations
-from e3_command import PrintTaxonomies
-from e3_command import PrintTap
-from e3_command import MoreWorldsOrEqualThan
-from e3_command import IsConsistent
-from e3_command import PrintWorlds
-from e3_command import GraphInconsistency
-from e3_command import PrintFix
+from e3_io import get_config, get_tap_from_id_or_name
+from e3_command import Graph, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
+from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix
 
 @logged               
 class CommandParser(object):
@@ -32,124 +19,176 @@ class CommandParser(object):
         pass
     def is_command(self, input):
         return self.re.match(input)
-    def get_command(self, tap, input):
+    def get_command(self, current_tap, input):
         pass
 
 class LoadTapParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'load tap (.*)')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        #example:
+        #load tap abstract.txt
+        CommandParser.__init__(self, '^load tap (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
         if match:
-            return LoadTap(tap, match.group(1))
+            return LoadTap(match.group(1))
         else:
             raise Exception('Unrecognized command line')
 
 class AddArticulationParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'add articulation (.*)')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        #example: 
+        #add articulation [1.A equals 2.B]
+        #add articulation [1.A equals 2.B] 2312842819299391
+        #add articulation [1.A equals 2.B] my_tap_name
+        CommandParser.__init__(self, '^add articulation (\[.*\])( (.*))?$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))            
             return AddArticulation(tap, match.group(1))
         else:
             raise Exception('Unrecognized command line')
 
 class RemoveArticulationParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'remove articulation (.*)')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        #example: 
+        #remove articulation 1
+        #remove articulation 1 2312842819299391
+        #remove articulation 1 my_tap_name
+        CommandParser.__init__(self, '^remove articulation (\d+)( (.*))?$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))
             return RemoveArticulation(tap, match.group(1))
         else:
             raise Exception('Unrecognized command line')
 
 class NameTapParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'name tap (.*)')
-    def get_command(self, tap, input):
+        CommandParser.__init__(self, '^name tap (.*)( (.*))?$')
+    def get_command(self, current_tap, input):
         match = self.is_command(input);
         if match:
+            tap = current_tap
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))
             return NameTap(tap, match.group(1))
         else:
             raise Exception('Unrecognized command line')
         
 class PrintTapParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'print tap')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        CommandParser.__init__(self, '^print tap( (.*))?$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return PrintTap(tap)
         else:
             raise Exception('Unrecognized command line')
     
 class PrintTaxonomiesParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'print taxonomies')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        CommandParser.__init__(self, '^print taxonomies( (.*))?$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return PrintTaxonomies(tap)
         else:
             raise Exception('Unrecognized command line')   
          
 class PrintArticulationsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'print articulations')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        CommandParser.__init__(self, '^print articulations( (.*))?$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)    
         if match:
+            tap = current_tap
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
             return PrintArticulations(tap)
         else:
             raise Exception('Unrecognized command line')
 
 class MoreWorldsOrEqualThanParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, '>= (.*) worlds')
-    def get_command(self, tap, input):
-        match = self.is_command(input);
+        CommandParser.__init__(self, '^>= (.*) worlds( (.*))?$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
         if match:
             return MoreWorldsOrEqualThan(tap, int(match.group(1)))
         else:
-            raise Exception('Unrecognized command line')    
+            raise Exception('Unrecognized command line')
 
 class GraphWorldsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'graph worlds')
-    def get_command(self, tap, input):
-        return GraphWorlds(tap)
+        CommandParser.__init__(self, '^graph worlds (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return GraphWorlds(tap)
+        else:
+            raise Exception('Unrecognized command line')
 
 class GraphParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'graph$')
-    def get_command(self, tap, input):
-        return Graph(tap)
+        CommandParser.__init__(self, '^graph (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return Graph(tap)
+        else:
+            raise Exception('Unrecognized command line')
         
 class IsConsistentParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'is consistent')
-    def get_command(self, tap, input):
-        return IsConsistent(tap)
+        CommandParser.__init__(self, '^is consistent (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return IsConsistent(tap)
+        else:
+            raise Exception('Unrecognized command line')
                              
 class PrintWorldsParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'print worlds')
-    def get_command(self, tap, input):
-        return PrintWorlds(tap)
+        CommandParser.__init__(self, '^print worlds (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return PrintWorlds(tap)
+        else:
+            raise Exception('Unrecognized command line')
                        
 class GraphInconsistencyParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'graph inconsistency')
-    def get_command(self, tap, input):
-        return GraphInconsistency(tap)     
+        CommandParser.__init__(self, '^graph inconsistency (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return GraphInconsistency(tap)
+        else:
+            raise Exception('Unrecognized command line')   
     
 class PrintFixParser(CommandParser):
     def __init__(self):
-        CommandParser.__init__(self, 'print fix')
-    def get_command(self, tap, input):
-        return PrintFix(tap)    
+        CommandParser.__init__(self, '^print fix (.*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return PrintFix(tap)
+        else:
+            raise Exception('Unrecognized command line')
                                                               
 class CommandProvider(object):
     def __init__(self):
@@ -169,7 +208,7 @@ class CommandProvider(object):
                              GraphInconsistencyParser(),
                              PrintFixParser()
                              ]
-    def provide(self, tap, input):
+    def provide(self, current_tap, input):
         for parser in self.commandParsers:
             if parser.is_command(input):
-               return parser.get_command(tap, input)
+               return parser.get_command(current_tap, input)

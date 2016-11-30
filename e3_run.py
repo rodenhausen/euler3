@@ -45,11 +45,15 @@ class Interactive(Run):
     def __init__(self, commandProvider):
         Run.__init__(self)
     def run(self):
+        current_tap = get_current_tap()
+        if current_tap:
+            print "Tap: %s" % current_tap.get_id()
+        else:
+            print "Tap: None"
         while True:
-            tap = get_current_tap()
+            current_tap = get_current_tap()
             input = raw_input('euler2 > ')
-            #history.append(input)
-            command = self.commandProvider.provide(tap, input)
+            command = self.commandProvider.provide(current_tap, input)
             if command != None:
                 command.run()
                 if command.get_output():

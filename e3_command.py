@@ -3,13 +3,9 @@
 '''
 from autologging import logged
 from pinject import copy_args_to_public_fields
-from e3_io import set_name
-from e3_io import get_tap
-from e3_io import store_tap
-from e3_io import set_current_tap
+from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_current_tap, get_config
 from subprocess import Popen, PIPE, call
 import os
-from e3_io import get_config
 
 class Execution(object):
     def __init__(self, command):
@@ -20,7 +16,7 @@ class Execution(object):
 @logged
 class Command(object):
     @copy_args_to_public_fields
-    def __init__(self, tap):
+    def __init__(self):
         self.config = get_config()
         pass
     def run(self):
@@ -46,11 +42,11 @@ class Command(object):
 @logged 
 class LoadTap(Command):
     @copy_args_to_public_fields
-    def __init__(self, tap, input):
-        Command.__init__(self, tap)
+    def __init__(self, cleanTaxFile):
+        Command.__init__(self)
     def run(self):
         Command.run(self)
-        tap = get_tap(self.input)
+        tap = get_tap_from_cleantax(self.cleanTaxFile)
         set_current_tap(tap)
         store_tap(tap)
         self.output.append("Tap: " + tap.get_id())
@@ -60,7 +56,7 @@ class LoadTap(Command):
 class AddArticulation(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, articulation):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         self.tap.add_articulation(self.articulation)
@@ -73,7 +69,7 @@ class AddArticulation(Command):
 class RemoveArticulation(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, articulation):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         self.tap.remove_articulation(self.articulation)
@@ -86,7 +82,7 @@ class RemoveArticulation(Command):
 class NameTap(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, name):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         set_name(self.name, self.tap);
@@ -96,7 +92,7 @@ class NameTap(Command):
 class UseTap(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         self.output.append(self.tap.__str__())
@@ -105,7 +101,7 @@ class UseTap(Command):
 class PrintTap(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         self.output.append(self.tap.__str__())
@@ -114,27 +110,39 @@ class PrintTap(Command):
 class PrintTaxonomies(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
-        self.output.append('\n'.join(self.tap.taxonomyA))
-        self.output.append('\n'.join(self.tap.taxonomyB))
+        indices = ['']
+        for x in range(1, len(self.tap.taxonomyA) - 1):
+            indices.append(str(x) + ". ")
+        taxonomyALines = [x + y for x, y in zip(indices, self.tap.taxonomyA)]
+        self.output.append('\n'.join(taxonomyALines))
+        indices = ['']
+        for x in range(1, len(self.tap.taxonomyB) - 1):
+            indices.append(str(x) + ". ")
+        taxonomyBLines = [x + y for x, y in zip(indices, self.tap.taxonomyB)]
+        self.output.append('\n'.join(taxonomyBLines))
         return self.tap
             
 class PrintArticulations(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
-        Command.run(self)
-        self.output.append('\n'.join(self.tap.articulations))
+        Command.run(self)        
+        indices = ['']
+        for x in range(1, len(self.tap.articulations) - 1):
+            indices.append(str(x) + ". ")
+        articulationLines = [x + y for x, y in zip(indices, self.tap.articulations)]
+        self.output.append('\n'.join(articulationLines))
         return self.tap
     
 @logged 
 class GraphWorlds(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -172,7 +180,7 @@ class GraphWorlds(Command):
 class IsConsistent(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -197,7 +205,7 @@ class IsConsistent(Command):
 class MoreWorldsOrEqualThan(Command):
     @copy_args_to_public_fields
     def __init__(self, tap, thanVariable):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -226,7 +234,7 @@ class MoreWorldsOrEqualThan(Command):
 class PrintFix(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -251,7 +259,7 @@ class PrintFix(Command):
 class GraphInconsistency(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -284,7 +292,7 @@ class GraphInconsistency(Command):
 class PrintWorlds(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -325,7 +333,7 @@ class PrintWorlds(Command):
 class Graph(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         tapId = self.tap.get_id()
@@ -342,11 +350,12 @@ class Graph(Command):
         for filename in os.listdir(os.path.join(tapId, "0-Input")):
             if filename.endswith(".%s" % format):
                 self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "0-Input", filename)))
-                @logged 
+
+@logged
 class SetCoverage(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
 
@@ -354,7 +363,7 @@ class SetCoverage(Command):
 class SetRegions(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
 
@@ -362,13 +371,13 @@ class SetRegions(Command):
 class SetSiblingDisjointness(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
         
-class unsetSiblingDisjointness(Command):
+class UnsetSiblingDisjointness(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self, tap)
+        Command.__init__(self)
     def run(self):
         Command.run(self)
