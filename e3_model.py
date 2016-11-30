@@ -15,15 +15,15 @@ class Tap(object):
         del self.articulations[int(articulationIndex)]
     def __str__(self, *args, **kwargs):
         indices = ['']
-        for x in range(1, len(self.articulations) - 1):
+        for x in range(1, len(self.articulations)):
             indices.append(str(x) + ". ")
         articulationLines = [x + y for x, y in zip(indices, self.articulations)]
         indices = ['']
-        for x in range(1, len(self.taxonomyA) - 1):
+        for x in range(1, len(self.taxonomyA)):
             indices.append(str(x) + ". ")
         taxonomyALines = [x + y for x, y in zip(indices, self.taxonomyA)]
         indices = ['']
-        for x in range(1, len(self.taxonomyB) - 1):
+        for x in range(1, len(self.taxonomyB)):
             indices.append(str(x) + ". ")
         taxonomyBLines = [x + y for x, y in zip(indices, self.taxonomyB)]
         return ('isCoverage:' + str(self.isCoverage) + '\nisSiblingDisjontness:' + str(self.isSiblingDisjointness) + '\nRegions:' + self.regions + '\n' + 

@@ -157,12 +157,12 @@ class PrintTaxonomies(Command):
     def run(self):
         Command.run(self)
         indices = ['']
-        for x in range(1, len(self.tap.taxonomyA) - 1):
+        for x in range(1, len(self.tap.taxonomyA)):
             indices.append(str(x) + ". ")
         taxonomyALines = [x + y for x, y in zip(indices, self.tap.taxonomyA)]
         self.output.append('\n'.join(taxonomyALines))
         indices = ['']
-        for x in range(1, len(self.tap.taxonomyB) - 1):
+        for x in range(1, len(self.tap.taxonomyB)):
             indices.append(str(x) + ". ")
         taxonomyBLines = [x + y for x, y in zip(indices, self.tap.taxonomyB)]
         self.output.append('\n'.join(taxonomyBLines))
