@@ -33,14 +33,32 @@ class MiscCommand(Command):
         Command.run(self)
                     
 class Euler2Command(Command):
-    def __init__(self):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
         Command.__init__(self)
+        self.eulerXPath = self.config['eulerXPath']
+        self.imageViewer = self.config['imageViewer']
+        self.maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
+        self.preferredImageFormat = self.config['preferredImageFormat']
+        self.preferredRepairMethod = self.config['preferredRepairMethod']
+        self.defaultIsCoverage = self.config['defaultIsCoverage']
+        self.defaultIsSiblingDisjointness = self.config['defaultIsSiblingDisjointness']
+        self.defaultRegions = self.config['defaultRegions']
+        self.eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
+        self.tapId = self.tap.get_id()
+        self.cleantaxFile = e3_io.get_cleantax_file(self.tap)
+        self.outputDir = self.tapId
+        self.name = self.__class__.__name__
+        self.e2InputDir = e3_io.get_0_input_dir(self.tap)
+        self.e2AspOutputDir = e3_io.get_2_asp_output_dir(self.tap)
+        self.e2PWsDir = e3_io.get_4_pws_dir(self.tap)
+        self.e2LatticesDir = e3_io.get_6_lattices_dir(self.tap)
     def run(self):
         Command.run(self)
-    def run_euler(self, label, command, output):
-        with open(os.path.join(output, '%s.stdout' % label), 'w+') as out:
-            with open(os.path.join(output, '%s.stderr' % label), 'w+') as err:
-                with open(os.path.join(output, '%s.returncode' % label), 'w+') as rc:
+    def run_euler(self, label, command):
+        with open(os.path.join(self.outputDir, '%s.stdout' % label), 'w+') as out:
+            with open(os.path.join(self.outputDir, '%s.stderr' % label), 'w+') as err:
+                with open(os.path.join(self.outputDir, '%s.returncode' % label), 'w+') as rc:
                     p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
                     stdout, stderr = p.communicate()
                     #print stdout
@@ -48,6 +66,27 @@ class Euler2Command(Command):
                     out.write(stdout)
                     err.write(stderr)
                     rc.write('%s' % p.returncode)
+    def is_consistent(self, stdoutFile):
+        with open(stdoutFile, 'r') as f:
+            for line in f:
+                if line.startswith('Input is inconsistent'):
+                    return False
+        return True
+    def get_possible_worlds(self):
+        possibleWorlds = []
+        with open(os.path.join(self.e2AspOutputDir, '.cleantax.pw'), 'r') as f:
+            currentWorld = ""
+            for line in f:
+                if len(line.strip()) == 0:
+                    if len(currentWorld) > 0:
+                        possibleWorlds.append(currentWorld.rstrip())
+                        currentWorld = ""
+                else:
+                    if not len(line.strip()) == 0:
+                        currentWorld += line
+            if len(currentWorld) > 0:
+                possibleWorlds.append(currentWorld.rstrip())
+        return possibleWorlds
     def is_complete(self):
         return False
     
@@ -323,47 +362,34 @@ class UnsetSiblingDisjointness(ModelCommand):
 class GraphWorlds(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = eulerExecutable, 
-            cleantax = cleantaxFile, output = output);
-        format = self.config['preferredImageFormat']
-        self.run_euler("Align", alignCommand, output)
-        inconsistent = False
-        with open(os.path.join(output, "Align.stdout"), 'r') as aspOutputFile:
-            for line in aspOutputFile:
-                if line.startswith('Input is inconsistent'):
-                    inconsistent = True
-        
-        if inconsistent:
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
+            cleantax = self.cleantaxFile, output = self.outputDir);
+        self.run_euler(self.name + "-Align", alignCommand)
+        if not self.is_consistent(os.path.join(self.outputDir, self.name + "-Align.stdout")):
             self.output.append("The tap is inconsistent")
             return
-        showCommand = '{eulerExecutable} show -o {output} pw --{format}'.format(eulerExecutable = eulerExecutable, 
-            output = output, format = format);
-        self.run_euler("ShowPW", showCommand, output)
         
-        maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
-        possibleWorldsPath = os.path.join(tapId, "4-PWs")
-        possibleWorldsCount = len([f for f in os.listdir(possibleWorldsPath) if f.endswith('.%s' % format) 
-                                   and os.path.isfile(os.path.join(possibleWorldsPath, f))])
-        if possibleWorldsCount <= maxPossibleWorldsToShow:
+        showCommand = '{eulerExecutable} show -o {output} pw --{format}'.format(eulerExecutable = self.eulerExecutable, 
+            output = self.outputDir, format = self.preferredImageFormat);
+        self.run_euler(self.name + "-ShowPW", showCommand)
+        
+        possibleWorldsCount = len(self.get_possible_worlds())
+        if possibleWorldsCount <= self.maxPossibleWorldsToShow:
             self.output.append("There are {count} possible worlds. I show them all to you.".format(
                 count = possibleWorldsCount))
         else:
             self.output.append("There are {count} possible worlds. I will only show {maxCount} of them to you.".format(
-                count = possibleWorldsCount, maxCount = maxPossibleWorldsToShow))
+                count = possibleWorldsCount, maxCount = self.maxPossibleWorldsToShow))
         
         self.executeOutput = []
         openCount = 0
-        for filename in os.listdir(os.path.join(tapId, "4-PWs")):
-            if filename.endswith(".%s" % format) and openCount < maxPossibleWorldsToShow:
+        for filename in os.listdir(self.e2PWsDir):
+            if filename.endswith(".%s" % self.preferredImageFormat) and openCount < self.maxPossibleWorldsToShow:
                 openCount += 1
-                self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "4-PWs", filename)))
+                self.executeOutput.append(self.imageViewer.format(file = os.path.join(self.e2PWsDir, filename)))
     def is_complete(self):
         return False
         
@@ -371,49 +397,33 @@ class GraphWorlds(Euler2Command):
 class IsConsistent(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
         alignCommand = '{eulerExecutable} align {cleantax} -o {output} --consistency'.format(
-            eulerExecutable = eulerExecutable, cleantax = cleantaxFile, output = output);
-        self.run_euler("AlignConsistency", alignCommand, output)
+            eulerExecutable = self.eulerExecutable, cleantax = self.cleantaxFile, output = self.outputDir);
+        self.run_euler(self.name + "-AlignConsistency", alignCommand)
         
-        consistent = False
-        with open(os.path.join(output, "AlignConsistency.stdout"), 'r') as aspOutputFile:
-            for line in aspOutputFile:
-                if line.startswith('Input is consistent'):
-                    consistent = True
-        if not consistent:
-            self.output.append("no")
-        else:
+        if self.is_consistent(os.path.join(self.outputDir, self.name + "-AlignConsistency.stdout")):
             self.output.append("yes")
+        else:
+            self.output.append("no")
+    def is_complete(self):
+        return False
             
 @logged 
 class MoreWorldsOrEqualThan(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap, thanVariable):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
         alignCommand = '{eulerExecutable} align {cleantax} -o {output} -n {thanVariable}'.format(
-            eulerExecutable = eulerExecutable, cleantax = cleantaxFile, output = output, 
+            eulerExecutable = self.eulerExecutable, cleantax = self.cleantaxFile, output = self.outputDir, 
             thanVariable = self.thanVariable);
-        self.run_euler("Align", alignCommand, output)
+        self.run_euler(self.name + "-Align", alignCommand)
         
-        aspOutputPath = os.path.join(tapId, "2-ASP-output", '.cleantax.pw')
-        possibleWorldsCount = 0
-        with open(aspOutputPath, 'r') as aspOutputFile:
-            for line in aspOutputFile:
-                if line.startswith('Possible world '):
-                    possibleWorldsCount += 1
+        possibleWorldsCount = len(self.get_possible_worlds())
         if possibleWorldsCount < self.thanVariable:
             self.output.append("There are < {thanVariable} possible worlds. There are {count}.".format(
                 thanVariable = self.thanVariable, count = possibleWorldsCount))
@@ -425,20 +435,16 @@ class MoreWorldsOrEqualThan(Euler2Command):
 class PrintFix(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
-        repairMethod = self.config['preferredRepairMethod']
-        repairCommand = '{eulerExecutable} align {cleantax} -o {output} --repair={repairMethod}'.format(eulerExecutable = eulerExecutable, 
-            cleantax = cleantaxFile, output = output, repairMethod = repairMethod);
-        self.run_euler("AlignRepair", repairCommand, output)
+        repairCommand = '{eulerExecutable} align {cleantax} -o {output} --repair={repairMethod}'.format(eulerExecutable = self.eulerExecutable, 
+            cleantax = self.cleantaxFile, output = self.outputDir, repairMethod = self.preferredRepairMethod);
+        self.run_euler(self.name + "-AlignRepair", repairCommand, output)
         self.output.append("Suggested repair options")
-        with open(os.path.join(output, "AlignRepair.stdout"), 'r') as aspOutputFile:
-            for line in aspOutputFile:
+        
+        with open(os.path.join(self.outputDir, self.name + "-AlignRepair.stdout"), 'r') as stdoutFile:
+            for line in stdoutFile:
                 if line.startswith('Repair option'):
                     self.output.append(line.rstrip())
                 if line.startswith('Possible world'):
@@ -450,104 +456,62 @@ class PrintFix(Euler2Command):
 class GraphInconsistency(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
-        format = self.config['preferredImageFormat']
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = eulerExecutable, 
-                            cleantax = cleantaxFile, output = output);                
-        self.run_euler("Align", alignCommand, output)
-        inconsistent = False
-        with open(os.path.join(output, "Align.stdout"), 'r') as aspOutputFile:
-            for line in aspOutputFile:
-                if line.startswith('Input is inconsistent'):
-                    inconsistent = True
-        
-        showCommand = '{eulerExecutable} show -o {output} inconLat --{format}'.format(eulerExecutable = eulerExecutable, 
-                            output = output, format = format);
-        if inconsistent:
-            self.run_euler("ShowInconLat", showCommand, output)
-            self.output.append("Take a look at the graph")
-            self.executeOutput = []
-            for filename in os.listdir(os.path.join(tapId, "6-Lattices")):
-                if filename.endswith(".%s" % format):
-                    self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "6-Lattices", filename)))
-        else:
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
+                            cleantax = self.cleantaxFile, output = self.outputDir);                
+        self.run_euler(self.name + "-Align", alignCommand)
+        if not self.is_consistent(os.path.join(output, "Align.stdout")):
             self.output.append("The tap is not inconsistent. I have nothing to show.")
+            return
+        
+        showCommand = '{eulerExecutable} show -o {output} inconLat --{format}'.format(eulerExecutable = self.eulerExecutable, 
+                        output = self.outputDir, format = self.preferredImageFormat);
+        self.run_euler(self.name + "-ShowInconLat", showCommand)
+        self.output.append("Take a look at the graph")
+        self.executeOutput = []
+        for filename in self.e2LatticesDir:
+            if filename.endswith(".%s" % self.preferredImageFormat):
+                self.executeOutput.append(self.imageViewer.format(file = os.path.join(self.e2LatticesDir, filename))) 
             
 @logged 
 class PrintWorlds(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = eulerExecutable, 
-            cleantax = cleantaxFile, output = output);
-        format = self.config['preferredImageFormat']
-        self.run_euler("Align", alignCommand, output)
-        
-        inconsistent = False
-        with open(os.path.join(output, "Align.stdout"), 'r') as aspOutputFile:
-            for line in aspOutputFile:
-                if line.startswith('Input is inconsistent'):
-                    inconsistent = True
-        
-        if inconsistent:
+        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
+            cleantax = self.cleantaxFile, output = self.outputDir);
+        self.run_euler(self.name + "-Align", alignCommand)        
+        if not self.is_consistent(os.path.join(self.outputDir, self.name + "-Align.stdout")):
             self.output.append("The tap is inconsistent")
             return
-          
-        aspOutputPath = os.path.join(tapId, "2-ASP-output", '.cleantax.pw')
-        possibleWorlds = []
-        with open(aspOutputPath, 'r') as aspOutputFile:
-            currentWorld = ""
-            for line in aspOutputFile:
-                if len(line.strip()) == 0:
-                    if len(currentWorld) > 0:
-                        possibleWorlds.append(currentWorld.rstrip())
-                        currentWorld = ""
-                else:
-                    if not len(line.strip()) == 0:
-                        currentWorld += line
-            if len(currentWorld) > 0:
-                possibleWorlds.append(currentWorld.rstrip())
         
-        maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
-        if len(possibleWorlds) <= maxPossibleWorldsToShow:
+        possibleWorlds = self.get_possible_worlds()
+        if len(possibleWorlds) <= self.maxPossibleWorldsToShow:
             self.output.append("There are {count} possible worlds. I show them all to you.".format(
                 count = len(possibleWorlds)))
         else:
             self.output.append("There are {count} possible worlds. I will only show {maxCount} of them to you.".format(
-                count = len(possibleWorlds), maxCount = maxPossibleWorldsToShow))
+                count = len(possibleWorlds), maxCount = self.maxPossibleWorldsToShow))
         for world in possibleWorlds:
             self.output.append(world)
-        
+      
 @logged 
 class GraphTap(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Euler2Command.__init__(self)
+        Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        tapId = self.tap.get_id()
-        cleantaxFile = os.path.join(tapId, ".cleantax")
-        eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
-        output = tapId
-        format = self.config['preferredImageFormat']
-        showCommand = '{eulerExecutable} show iv {cleantax} -o {output} --{format}'.format(eulerExecutable = eulerExecutable, 
-            cleantax = cleantaxFile, output = output, format = format);
-        self.run_euler("ShowIV", showCommand, output)
+        showCommand = '{eulerExecutable} show iv {cleantax} -o {output} --{format}'.format(eulerExecutable = self.eulerExecutable, 
+            cleantax = self.cleantaxFile, output = self.outputDir, format = self.preferredImageFormat);
+        self.run_euler(self.name + "-ShowIV", showCommand)
         
         self.output.append("Take a look at the graph")
         self.executeOutput = []
-        for filename in os.listdir(os.path.join(tapId, "0-Input")):
-            if filename.endswith(".%s" % format):
-                self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "0-Input", filename)))
+        for filename in os.listdir(self.e2InputDir):
+            if filename.endswith(".%s" % self.preferredImageFormat):
+                self.executeOutput.append(self.imageViewer.format(file = os.path.join(self.e2InputDir, filename)))

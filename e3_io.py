@@ -196,3 +196,18 @@ def append_project_history(input, command):
             if os.path.isfile(os.path.join('projects', currentProject, '.history')):
                 with open(os.path.join('projects', currentProject, '.history'), 'a') as historyFile:
                     historyFile.write(input + '\n')
+                    
+def get_cleantax_file(tap):
+    return os.path.join(tap.get_id(), ".cleantax")
+
+def get_0_input_dir(tap):
+    return os.path.join(tap.get_id(), "0-Input")
+
+def get_2_asp_output_dir(tap):
+    return os.path.join(tap.get_id(), "2-ASP-output")
+
+def get_4_pws_dir(tap):
+    return os.path.join(tap.get_id(), "4-PWs")
+
+def get_6_lattices_dir(tap):
+    return os.path.join(tap.get_id(), "6-Lattices")
