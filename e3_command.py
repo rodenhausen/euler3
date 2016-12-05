@@ -3,7 +3,8 @@
 '''
 from autologging import logged
 from pinject import copy_args_to_public_fields
-from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_current_tap, get_config, get_tap_id_and_name, get_names, clear_names
+import e3_io
+#from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_current_tap, get_config, get_tap_id_and_name, get_names, clear_names
 from subprocess import Popen, PIPE, call
 import os
 import e3_parse
@@ -12,16 +13,24 @@ import e3_parse
 class Command(object):
     @copy_args_to_public_fields
     def __init__(self):
-        self.config = get_config()
+        self.config = e3_io.get_config()
         self.output = []
         self.executeOutput = []
         pass
-    def run(self, full_command):
+    def run(self):
         self.__log.debug("run %s" % self.__class__.__name__)
     def get_output(self):
         return self.output
     def get_execute_output(self):
         return self.executeOutput
+    
+@logged
+class MiscCommand(Command):
+    @copy_args_to_public_fields
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        Command.run(self)
                     
 class Euler2Command(Command):
     def __init__(self):
@@ -49,7 +58,7 @@ class ModelCommand(Command):
         Command.run(self)    
                     
 @logged 
-class Bye(Command):
+class Bye(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self):
         Command.__init__(self)
@@ -58,62 +67,62 @@ class Bye(Command):
         self.executeOutput.append("Exit")
         
 @logged 
-class Help(Command):
+class Help(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)
+        MiscCommand.run(self)
         for commandParser in e3_parse.commandParsers:
             help = commandParser.get_help()
             if help:
                 self.output.append(commandParser.get_help())
                 
 @logged
-class NameTap(Command):
+class NameTap(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, tap, name):
         Command.__init__(self)
     def run(self):
         Command.run(self)
-        set_name(self.name, self.tap);
-        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+        e3_io.set_name(self.name, self.tap);
+        self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
                 
-class PrintNames(Command):
+class PrintNames(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)
-        names = get_names()
+        MiscCommand.run(self)
+        names = e3_io.get_names()
         if names:
             self.output.append('\n'.join(names))
         else:
             self.output.append('No names recorded.')
     
-class ClearNames(Command):
+class ClearNames(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)
-        clear_names()
+        MiscCommand.run(self)
+        e3_io.clear_names()
         self.output.append("Names are cleared")
     
-class PrintTap(Command):
+class PrintTap(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)
+        MiscCommand.run(self)
         self.output.append(self.tap.__str__())
     
-class PrintTaxonomies(Command):
+class PrintTaxonomies(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)
+        MiscCommand.run(self)
         indices = ['']
         for x in range(1, len(self.tap.taxonomyA)):
             indices.append(str(x) + ". ")
@@ -125,12 +134,12 @@ class PrintTaxonomies(Command):
         taxonomyBLines = [x + y for x, y in zip(indices, self.tap.taxonomyB)]
         self.output.append('\n'.join(taxonomyBLines))
             
-class PrintArticulations(Command):
+class PrintArticulations(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)        
+        MiscCommand.run(self)        
         indices = ['']
         for x in range(1, len(self.tap.articulations)):
             indices.append(str(x) + ". ")
@@ -138,11 +147,12 @@ class PrintArticulations(Command):
         self.output.append('\n'.join(articulationLines))
     
 @logged
-class CreateProject(Command):
+class CreateProject(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, name):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
+        MiscCommand.run(self)
         if os.path.isdir(os.path.join('projects', self.name)):
             self.output.append('A project with name ' + self.name + ' already exists')
             return
@@ -153,11 +163,12 @@ class CreateProject(Command):
             currentProjectFile.write(self.name)
 
 @logged
-class OpenProject(Command):
+class OpenProject(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, name):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
+        MiscCommand.run(self)
         if not os.path.isdir(os.path.join('projects', self.name)):
             self.output.append('A project with name ' + self.name + ' does not exist')
             return
@@ -165,33 +176,36 @@ class OpenProject(Command):
             currentProjectFile.write(self.name)
 
 @logged
-class PrintProjectHistory(Command):
+class PrintProjectHistory(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, commandProvider):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
+        MiscCommand.run(self)
         name = None
         with open('.current_project') as currentProjectFile:
-            name = currentProjectFile.readlines()[0]
+            name = currentProjectFile.readline()
         if not name:
             self.output.append('No project open')
             return
         with open(os.path.join('projects', name, ".history"), 'r') as historyFile:
-            for line in historyFile:
-                command = commandProvider.provide(line)
-                if type(command) == ModelCommand:
-                    self.output.append("[Tap] " + line)
-                if type(command) == Euler2Command:
-                    self.output.append("[Reasoning] " + line)
-                if type(command) == Command:
-                    self.output.append("[Misc] " + line)
+            for i, line in enumerate(historyFile):
+                line = line.rstrip()
+                command = self.commandProvider.provide(line)
+                if isinstance(command, ModelCommand):
+                    self.output.append(str(i) + ". [Tap] " + line)
+                elif isinstance(command, Euler2Command):
+                    self.output.append(str(i) + ". [Reasoning] " + line)
+                elif isinstance(command, MiscCommand):
+                    self.output.append(str(i) + ". [Misc] " + line)
                     
 @logged
-class RemoveProjectHistory(Command):
+class RemoveProjectHistory(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, commandProvider, index):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
+        MiscCommand.run(self)
         name = None
         with open('.current_project') as currentProjectFile:
             name = currentProjectFile.readlines()[0]
@@ -204,21 +218,23 @@ class RemoveProjectHistory(Command):
             if self.index >= len(lines) or self.index < 0:
                 self.output.append("invalid index")
             line = lines[self.index]
+            newLines = list(lines)
             command = self.commandProvider.provide(line)
-            if type(command) == ModelCommand:
-                for i in range(index, len(lines) - 1):
-                    del lines[i]
+            if isinstance(command, ModelCommand):
+                for i in range(self.index, len(lines)):
+                    del newLines[self.index]
             else:
-                del lines[self.index]
-        with open(os.path.join('project', name, ".history"), 'w') as historyFile:
-            historyFile.write("\n".join(lines))
+                del newLines[self.index]
+        with open(os.path.join('projects', name, ".history"), 'w') as historyFile:
+            historyFile.write(''.join(newLines))
     
 @logged
-class CloseProject(Command):
+class CloseProject(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
+        MiscCommand.run(self)
         with open(os.path.join(".current_project"), 'w') as currentProjectFile:
             pass  
         
@@ -229,10 +245,10 @@ class LoadTap(ModelCommand):
         ModelCommand.__init__(self)
     def run(self):
         ModelCommand.run(self)
-        tap = get_tap_from_cleantax(self.cleanTaxFile)
-        set_current_tap(tap)
-        store_tap(tap)
-        self.output.append("Tap: " + get_tap_id_and_name(tap))
+        tap = e3_io.get_tap_from_cleantax(self.cleanTaxFile)
+        e3_io.set_current_tap(tap)
+        e3_io.store_tap(tap)
+        self.output.append("Tap: " + e3_io.get_tap_id_and_name(tap))
     
 @logged
 class AddArticulation(ModelCommand):
@@ -242,9 +258,9 @@ class AddArticulation(ModelCommand):
     def run(self):
         ModelCommand.run(self)
         self.tap.add_articulation(self.articulation)
-        set_current_tap(self.tap)
-        store_tap(self.tap)
-        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+        e3_io.set_current_tap(self.tap)
+        e3_io.store_tap(self.tap)
+        self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
 
 @logged
 class RemoveArticulation(ModelCommand):
@@ -259,9 +275,9 @@ class RemoveArticulation(ModelCommand):
             #print e
             self.output.append("Could not find an articulation with the given index")
             return
-        set_current_tap(self.tap)
-        store_tap(self.tap)
-        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+        e3_io.set_current_tap(self.tap)
+        e3_io.store_tap(self.tap)
+        self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
     
 class UseTap(ModelCommand):
     @copy_args_to_public_fields
@@ -270,7 +286,7 @@ class UseTap(ModelCommand):
     def run(self):
         ModelCommand.run(self)
         if self.tap:
-            self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+            self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
             
 @logged
 class SetCoverage(ModelCommand):

@@ -5,22 +5,20 @@ Created on Nov 22, 2016
 '''
 from autologging import logged
 from pinject import copy_args_to_public_fields
-import re
-from e3_io import get_config, get_tap_from_id_or_name
-from e3_command import GraphTap, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
-from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames, Help, Bye, CreateProject
-from e3_command import PrintProjectHistory, RemoveProjectHistory, CloseProject, OpenProject
+import e3_command
+import e3_io
 
 @logged               
 class CommandParser(object):
     @copy_args_to_public_fields
     def __init__(self, pattern):
+        import re
         self.re = re.compile(pattern, re.IGNORECASE)
-        self.config = get_config()
+        self.config = e3_io.get_config()
         pass
     def is_command(self, input):
         return self.re.match(input)
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         pass
     def get_help(self):
         pass
@@ -29,10 +27,10 @@ class CommandParser(object):
 class CreateProjectParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^create project (\S*)$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return CreateProject(match.group(1))
+            return e3_command.CreateProject(match.group(1))
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -42,10 +40,10 @@ class CreateProjectParser(CommandParser):
 class OpenProjectParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^open project (\S*)$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return OpenProject(match.group(1))
+            return e3_command.OpenProject(match.group(1))
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -55,10 +53,10 @@ class OpenProjectParser(CommandParser):
 class PrintProjectHistoryParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print project history$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return PrintProjectHistory(CommandProvider())
+            return e3_command.PrintProjectHistory(CommandProvider())
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -68,10 +66,10 @@ class PrintProjectHistoryParser(CommandParser):
 class RemoveProjectHistoryParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^remove project history (\d+)$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return RemoveProjectHistory(CommandProvider(), match.group(1))
+            return e3_command.RemoveProjectHistory(CommandProvider(), int(match.group(1)))
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -81,10 +79,10 @@ class RemoveProjectHistoryParser(CommandParser):
 class CloseProjectParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^close project$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return CloseProject()
+            return e3_command.CloseProject()
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -94,10 +92,10 @@ class CloseProjectParser(CommandParser):
 class ByeParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^bye$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return Bye()
+            return e3_command.Bye()
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -107,10 +105,10 @@ class ByeParser(CommandParser):
 class HelpParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^help$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return Help()
+            return e3_command.Help()
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -121,10 +119,10 @@ class LoadTapParser(CommandParser):
         #example:
         #load tap abstract.txt
         CommandParser.__init__(self, '^load tap (\S*)$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            return LoadTap(match.group(1))
+            return e3_command.LoadTap(match.group(1))
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -137,14 +135,14 @@ class AddArticulationParser(CommandParser):
         #add articulation [1.A equals 2.B] 2312842819299391
         #add articulation [1.A equals 2.B] my_tap_name
         CommandParser.__init__(self, '^add articulation (\[.*\])( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))  
             if tap:          
-                return AddArticulation(tap, match.group(1))
+                return e3_command.AddArticulation(tap, match.group(1))
             else:
                 raise Exception('Tap %s not found' % match.group(3))
         else:
@@ -159,14 +157,14 @@ class RemoveArticulationParser(CommandParser):
         #remove articulation 1 2312842819299391
         #remove articulation 1 my_tap_name
         CommandParser.__init__(self, '^remove articulation (\d+)( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))
             if tap:
-                return RemoveArticulation(tap, match.group(1))
+                return e3_command.RemoveArticulation(tap, match.group(1))
             else:
                 raise Exception('Tap %s not found' % match.group(3))
         else:
@@ -177,14 +175,14 @@ class RemoveArticulationParser(CommandParser):
 class NameTapParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^name tap (\S*)( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input);
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))
             if tap:
-                return NameTap(tap, match.group(1))
+                return e3_command.NameTap(tap, match.group(1))
             else:
                 raise Exception('Tap %s not found' % match.group(3))
         else:
@@ -195,10 +193,10 @@ class NameTapParser(CommandParser):
 class PrintNamesParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print names$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input);
         if match:
-            return PrintNames()
+            return e3_command.PrintNames()
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -207,10 +205,10 @@ class PrintNamesParser(CommandParser):
 class ClearNamesParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^clear names$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input);
         if match:
-            return ClearNames()
+            return e3_command.ClearNames()
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
@@ -219,12 +217,12 @@ class ClearNamesParser(CommandParser):
 class UseTapParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^use tap (\S+)$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input);
         if match:
             tap = get_tap_from_id_or_name(match.group(1))
             if tap:
-                return UseTap(tap)
+                return e3_command.UseTap(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(1))
         else:
@@ -235,14 +233,14 @@ class UseTapParser(CommandParser):
 class PrintTapParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print tap( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return PrintTap(tap)
+                return e3_command.PrintTap(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -253,14 +251,14 @@ class PrintTapParser(CommandParser):
 class PrintTaxonomiesParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print taxonomies( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return PrintTaxonomies(tap)
+                return e3_command.PrintTaxonomies(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -271,14 +269,14 @@ class PrintTaxonomiesParser(CommandParser):
 class PrintArticulationsParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print articulations( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)    
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return PrintArticulations(tap)
+                return e3_command.PrintArticulations(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -289,14 +287,14 @@ class PrintArticulationsParser(CommandParser):
 class MoreWorldsOrEqualThanParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^>= (\d+) worlds( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(2) and match.group(3):
                 tap = get_tap_from_id_or_name(match.group(3))
             if tap:
-                return MoreWorldsOrEqualThan(tap, int(match.group(1)))
+                return e3_command.MoreWorldsOrEqualThan(tap, int(match.group(1)))
             else:
                 raise Exception('Tap %s not found' % match.group(3))
         else:
@@ -307,14 +305,14 @@ class MoreWorldsOrEqualThanParser(CommandParser):
 class GraphWorldsParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^graph worlds( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return GraphWorlds(tap)
+                return e3_command.GraphWorlds(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -325,14 +323,14 @@ class GraphWorldsParser(CommandParser):
 class GraphTapParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^graph tap( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return GraphTap(tap)
+                return e3_command.GraphTap(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -343,14 +341,14 @@ class GraphTapParser(CommandParser):
 class IsConsistentParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^is consistent( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return IsConsistent(tap)
+                return e3_command.IsConsistent(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -361,14 +359,14 @@ class IsConsistentParser(CommandParser):
 class PrintWorldsParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print worlds( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return PrintWorlds(tap)
+                return e3_command.PrintWorlds(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -379,14 +377,14 @@ class PrintWorldsParser(CommandParser):
 class GraphInconsistencyParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^graph inconsistency( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return GraphInconsistency(tap)
+                return e3_command.GraphInconsistency(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -397,14 +395,14 @@ class GraphInconsistencyParser(CommandParser):
 class PrintFixParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^print fix( (\S*))?$')
-    def get_command(self, current_tap, input):
+    def get_command(self, input):
         match = self.is_command(input)
         if match:
-            tap = current_tap
+            tap = e3_io.get_current_tap()
             if match.group(1) and match.group(2):
                 tap = get_tap_from_id_or_name(match.group(2))
             if tap:
-                return PrintFix(tap)
+                return e3_command.PrintFix(tap)
             else:
                 raise Exception('Tap %s not found' % match.group(2))
         else:
@@ -442,7 +440,7 @@ class CommandProvider(object):
     def __init__(self):
         #self.commands = Command.__subclasses__()#
         pass
-    def provide(self, current_tap, input):
+    def provide(self, input):
         for parser in commandParsers:
             if parser.is_command(input):
-               return parser.get_command(current_tap, input)
+               return parser.get_command(input)

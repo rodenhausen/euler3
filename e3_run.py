@@ -8,17 +8,14 @@ from autologging import logged
 import pinject
 from pinject_config import Config
 from pinject import copy_args_to_public_fields
-from e3_io import get_current_tap, get_tap_id_and_name
 import readline
 import os
-from e3_io import get_config
 from subprocess import Popen, PIPE, call
 
 @logged
 class Run(object):
     def __init__(self):
         pass
-    
     def run(self):
         pass
     
@@ -45,17 +42,18 @@ class Interactive(Run):
     def __init__(self, commandProvider):
         Run.__init__(self)
     def run(self):
-        current_tap = get_current_tap()
+        import e3_io
+        current_tap = e3_io.get_current_tap()
         if current_tap:
-            print "Tap: %s" % get_tap_id_and_name(current_tap)
+            print "Tap: %s" % e3_io.get_tap_id_and_name(current_tap)
         else:
             print "Tap: None"
         while True:
-            current_tap = get_current_tap()
             input = raw_input('e3 > ')
-            command = self.commandProvider.provide(current_tap, input)
+            command = self.commandProvider.provide(input)
             if command != None:
                 command.run()
+                e3_io.append_project_history(input, command)
                 if command.get_output():
                     for output in command.get_output():
                         print output

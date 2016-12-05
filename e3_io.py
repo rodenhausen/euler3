@@ -5,7 +5,8 @@ Created on Nov 22, 2016
 '''
 import yaml
 import os.path
-from e3_model import Tap
+import e3_model
+import e3_command
 
 def get_config():
     if not os.path.isfile('.config'):
@@ -123,7 +124,7 @@ def get_tap(tapId):
                     elif not taxonomyBComplete:
                         taxonomyB.append(line)
                     else: articulations.append(line)
-    return Tap(isCoverage, isSiblingDisjointness, regions, taxonomyA, taxonomyB, articulations)
+    return e3_model.Tap(isCoverage, isSiblingDisjointness, regions, taxonomyA, taxonomyB, articulations)
       
 def get_tap_from_cleantax(cleanTaxFile):
     config = get_config()
@@ -150,7 +151,7 @@ def get_tap_from_cleantax(cleanTaxFile):
                 elif not taxonomyBComplete:
                     taxonomyB.append(line)
                 else: articulations.append(line)
-    return Tap(config['defaultIsCoverage'], config['defaultIsSiblingDisjointness'], config['defaultRegions'], taxonomyA, taxonomyB, articulations)
+    return e3_model.Tap(config['defaultIsCoverage'], config['defaultIsSiblingDisjointness'], config['defaultRegions'], taxonomyA, taxonomyB, articulations)
 
 def get_tap_from_name(name):
     id = get_tap_id(name)
@@ -185,3 +186,13 @@ def get_tap_name(id):
                     if value == id:
                         return key
     return None
+
+def append_project_history(input, command):
+    if not isinstance(command, e3_command.MiscCommand):
+        currentProject = None
+        with open('.current_project') as currentProjectFile:
+            currentProject = currentProjectFile.readline()
+        if currentProject:
+            if os.path.isfile(os.path.join('projects', currentProject, '.history')):
+                with open(os.path.join('projects', currentProject, '.history'), 'a') as historyFile:
+                    historyFile.write(input + '\n')
