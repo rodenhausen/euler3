@@ -8,7 +8,8 @@ from pinject import copy_args_to_public_fields
 import re
 from e3_io import get_config, get_tap_from_id_or_name
 from e3_command import GraphTap, GraphWorlds, UseTap, NameTap, AddArticulation, RemoveArticulation, LoadTap, PrintArticulations, PrintTaxonomies, PrintTap
-from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames, Help, Bye
+from e3_command import MoreWorldsOrEqualThan, IsConsistent, PrintWorlds, GraphInconsistency, PrintFix, PrintNames, ClearNames, Help, Bye, CreateProject
+from e3_command import PrintProjectHistory, RemoveProjectHistory, CloseProject, OpenProject
 
 @logged               
 class CommandParser(object):
@@ -24,6 +25,71 @@ class CommandParser(object):
     def get_help(self):
         pass
     
+@logged
+class CreateProjectParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^create project (\S*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return CreateProject(match.group(1))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "create project <name>\t\t\t\t\t\t\tCreates a project including managable command history"
+    
+@logged
+class OpenProjectParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^open project (\S*)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return OpenProject(match.group(1))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "open project <name>\t\t\t\t\t\t\tOpens an existing project with <name>"
+        
+@logged
+class PrintProjectHistoryParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^print project history$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return PrintProjectHistory(CommandProvider())
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "print project history\t\t\t\t\t\t\tPrint the project's command history"
+        
+@logged
+class RemoveProjectHistoryParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^remove project history (\d+)$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return RemoveProjectHistory(CommandProvider(), match.group(1))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "remove project history <index>\t\t\t\t\t\t\tRemove item with index from the project's command history"
+        
+@logged
+class CloseProjectParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^close project$')
+    def get_command(self, current_tap, input):
+        match = self.is_command(input)
+        if match:
+            return CloseProject()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "close project\t\t\t\t\t\t\tClose the current project"
+        
 @logged               
 class ByeParser(CommandParser):
     def __init__(self):
@@ -364,7 +430,12 @@ commandParsers = [  ByeParser(),
                     GraphWorldsParser(), 
                     PrintWorldsParser(),
                     GraphInconsistencyParser(),
-                    PrintFixParser()
+                    PrintFixParser(),
+                    CreateProjectParser(),
+                    PrintProjectHistoryParser(),
+                    RemoveProjectHistoryParser(),
+                    CloseProjectParser(),
+                    OpenProjectParser()
                 ]              
                                                 
 class CommandProvider(object):

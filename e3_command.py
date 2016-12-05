@@ -7,12 +7,6 @@ from e3_io import set_name, get_tap_from_cleantax, get_tap, store_tap, set_curre
 from subprocess import Popen, PIPE, call
 import os
 import e3_parse
-
-class Execution(object):
-    def __init__(self, command):
-        self.command = command
-    def execute(self):
-        self.command.run()
     
 @logged
 class Command(object):
@@ -22,12 +16,18 @@ class Command(object):
         self.output = []
         self.executeOutput = []
         pass
-    def run(self):
+    def run(self, full_command):
         self.__log.debug("run %s" % self.__class__.__name__)
     def get_output(self):
         return self.output
     def get_execute_output(self):
         return self.executeOutput
+                    
+class Euler2Command(Command):
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        Command.run(self)
     def run_euler(self, label, command, output):
         with open(os.path.join(output, '%s.stdout' % label), 'w+') as out:
             with open(os.path.join(output, '%s.stderr' % label), 'w+') as err:
@@ -39,6 +39,14 @@ class Command(object):
                     out.write(stdout)
                     err.write(stderr)
                     rc.write('%s' % p.returncode)
+    def is_complete(self):
+        return False
+    
+class ModelCommand(Command):                    
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        Command.run(self)    
                     
 @logged 
 class Bye(Command):
@@ -60,47 +68,6 @@ class Help(Command):
             help = commandParser.get_help()
             if help:
                 self.output.append(commandParser.get_help())
-    
-@logged 
-class LoadTap(Command):
-    @copy_args_to_public_fields
-    def __init__(self, cleanTaxFile):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-        tap = get_tap_from_cleantax(self.cleanTaxFile)
-        set_current_tap(tap)
-        store_tap(tap)
-        self.output.append("Tap: " + get_tap_id_and_name(tap))
-    
-@logged
-class AddArticulation(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap, articulation):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-        self.tap.add_articulation(self.articulation)
-        set_current_tap(self.tap)
-        store_tap(self.tap)
-        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
-
-@logged
-class RemoveArticulation(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap, articulationIndex):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-        try:
-            self.tap.remove_articulation(self.articulationIndex)
-        except Exception as e:
-            #print e
-            self.output.append("Could not find an articulation with the given index")
-            return
-        set_current_tap(self.tap)
-        store_tap(self.tap)
-        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
                 
 @logged
 class NameTap(Command):
@@ -111,16 +78,7 @@ class NameTap(Command):
         Command.run(self)
         set_name(self.name, self.tap);
         self.output.append("Tap: " + get_tap_id_and_name(self.tap))
-    
-class UseTap(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-        if self.tap:
-            self.output.append("Tap: " + get_tap_id_and_name(self.tap))
-    
+                
 class PrintNames(Command):
     @copy_args_to_public_fields
     def __init__(self):
@@ -179,13 +137,179 @@ class PrintArticulations(Command):
         articulationLines = [x + y for x, y in zip(indices, self.tap.articulations)]
         self.output.append('\n'.join(articulationLines))
     
-@logged 
-class GraphWorlds(Command):
+@logged
+class CreateProject(Command):
     @copy_args_to_public_fields
-    def __init__(self, tap):
+    def __init__(self, name):
         Command.__init__(self)
     def run(self):
-        Command.run(self)
+        if os.path.isdir(os.path.join('projects', self.name)):
+            self.output.append('A project with name ' + self.name + ' already exists')
+            return
+        os.makedirs(os.path.join('projects', self.name));
+        with open(os.path.join('projects', self.name, ".history"), 'w') as historyFile:
+            pass
+        with open(os.path.join(".current_project"), 'w') as currentProjectFile:
+            currentProjectFile.write(self.name)
+
+@logged
+class OpenProject(Command):
+    @copy_args_to_public_fields
+    def __init__(self, name):
+        Command.__init__(self)
+    def run(self):
+        if not os.path.isdir(os.path.join('projects', self.name)):
+            self.output.append('A project with name ' + self.name + ' does not exist')
+            return
+        with open(os.path.join(".current_project"), 'w') as currentProjectFile:
+            currentProjectFile.write(self.name)
+
+@logged
+class PrintProjectHistory(Command):
+    @copy_args_to_public_fields
+    def __init__(self, commandProvider):
+        Command.__init__(self)
+    def run(self):
+        name = None
+        with open('.current_project') as currentProjectFile:
+            name = currentProjectFile.readlines()[0]
+        if not name:
+            self.output.append('No project open')
+            return
+        with open(os.path.join('projects', name, ".history"), 'r') as historyFile:
+            for line in historyFile:
+                command = commandProvider.provide(line)
+                if type(command) == ModelCommand:
+                    self.output.append("[Tap] " + line)
+                if type(command) == Euler2Command:
+                    self.output.append("[Reasoning] " + line)
+                if type(command) == Command:
+                    self.output.append("[Misc] " + line)
+                    
+@logged
+class RemoveProjectHistory(Command):
+    @copy_args_to_public_fields
+    def __init__(self, commandProvider, index):
+        Command.__init__(self)
+    def run(self):
+        name = None
+        with open('.current_project') as currentProjectFile:
+            name = currentProjectFile.readlines()[0]
+        if not name:
+            self.output.append('No project open')
+            return
+        lines = []
+        with open(os.path.join('projects', name, ".history"), 'r') as historyFile:
+            lines = historyFile.readlines()
+            if self.index >= len(lines) or self.index < 0:
+                self.output.append("invalid index")
+            line = lines[self.index]
+            command = self.commandProvider.provide(line)
+            if type(command) == ModelCommand:
+                for i in range(index, len(lines) - 1):
+                    del lines[i]
+            else:
+                del lines[self.index]
+        with open(os.path.join('project', name, ".history"), 'w') as historyFile:
+            historyFile.write("\n".join(lines))
+    
+@logged
+class CloseProject(Command):
+    @copy_args_to_public_fields
+    def __init__(self):
+        Command.__init__(self)
+    def run(self):
+        with open(os.path.join(".current_project"), 'w') as currentProjectFile:
+            pass  
+        
+@logged 
+class LoadTap(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, cleanTaxFile):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+        tap = get_tap_from_cleantax(self.cleanTaxFile)
+        set_current_tap(tap)
+        store_tap(tap)
+        self.output.append("Tap: " + get_tap_id_and_name(tap))
+    
+@logged
+class AddArticulation(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap, articulation):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+        self.tap.add_articulation(self.articulation)
+        set_current_tap(self.tap)
+        store_tap(self.tap)
+        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+
+@logged
+class RemoveArticulation(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap, articulationIndex):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+        try:
+            self.tap.remove_articulation(self.articulationIndex)
+        except Exception as e:
+            #print e
+            self.output.append("Could not find an articulation with the given index")
+            return
+        set_current_tap(self.tap)
+        store_tap(self.tap)
+        self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+    
+class UseTap(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+        if self.tap:
+            self.output.append("Tap: " + get_tap_id_and_name(self.tap))
+            
+@logged
+class SetCoverage(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+
+@logged 
+class SetRegions(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+
+@logged 
+class SetSiblingDisjointness(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+        
+class UnsetSiblingDisjointness(ModelCommand):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        ModelCommand.__init__(self)
+    def run(self):
+        ModelCommand.run(self)
+    
+@logged 
+class GraphWorlds(Euler2Command):
+    @copy_args_to_public_fields
+    def __init__(self, tap):
+        Euler2Command.__init__(self)
+    def run(self):
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -224,14 +348,16 @@ class GraphWorlds(Command):
             if filename.endswith(".%s" % format) and openCount < maxPossibleWorldsToShow:
                 openCount += 1
                 self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "4-PWs", filename)))
+    def is_complete(self):
+        return False
         
 @logged 
-class IsConsistent(Command):
+class IsConsistent(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        Euler2Command.__init__(self)
     def run(self):
-        Command.run(self)
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -251,12 +377,12 @@ class IsConsistent(Command):
             self.output.append("yes")
             
 @logged 
-class MoreWorldsOrEqualThan(Command):
+class MoreWorldsOrEqualThan(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap, thanVariable):
-        Command.__init__(self)
+        Euler2Command.__init__(self)
     def run(self):
-        Command.run(self)
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -280,12 +406,12 @@ class MoreWorldsOrEqualThan(Command):
                 thanVariable = self.thanVariable))
             
 @logged 
-class PrintFix(Command):
+class PrintFix(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        Euler2Command.__init__(self)
     def run(self):
-        Command.run(self)
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -305,12 +431,12 @@ class PrintFix(Command):
                     return
                            
 @logged 
-class GraphInconsistency(Command):
+class GraphInconsistency(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        Euler2Command.__init__(self)
     def run(self):
-        Command.run(self)
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -338,12 +464,12 @@ class GraphInconsistency(Command):
             self.output.append("The tap is not inconsistent. I have nothing to show.")
             
 @logged 
-class PrintWorlds(Command):
+class PrintWorlds(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        Euler2Command.__init__(self)
     def run(self):
-        Command.run(self)
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -389,12 +515,12 @@ class PrintWorlds(Command):
             self.output.append(world)
         
 @logged 
-class GraphTap(Command):
+class GraphTap(Euler2Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
-        Command.__init__(self)
+        Euler2Command.__init__(self)
     def run(self):
-        Command.run(self)
+        Euler2Command.run(self)
         tapId = self.tap.get_id()
         cleantaxFile = os.path.join(tapId, ".cleantax")
         eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
@@ -409,34 +535,3 @@ class GraphTap(Command):
         for filename in os.listdir(os.path.join(tapId, "0-Input")):
             if filename.endswith(".%s" % format):
                 self.executeOutput.append(self.config['imageViewer'].format(file = os.path.join(tapId, "0-Input", filename)))
-
-@logged
-class SetCoverage(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-
-@logged 
-class SetRegions(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-
-@logged 
-class SetSiblingDisjointness(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)
-        
-class UnsetSiblingDisjointness(Command):
-    @copy_args_to_public_fields
-    def __init__(self, tap):
-        Command.__init__(self)
-    def run(self):
-        Command.run(self)

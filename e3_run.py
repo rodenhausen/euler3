@@ -52,7 +52,7 @@ class Interactive(Run):
             print "Tap: None"
         while True:
             current_tap = get_current_tap()
-            input = raw_input('euler2 > ')
+            input = raw_input('e3 > ')
             command = self.commandProvider.provide(current_tap, input)
             if command != None:
                 command.run()
