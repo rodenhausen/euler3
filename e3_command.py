@@ -47,7 +47,7 @@ class Euler2Command(Command):
         self.eulerExecutable = os.path.join(self.config['eulerXPath'], "src-el", "euler2")
         self.tapId = self.tap.get_id()
         self.cleantaxFile = e3_io.get_cleantax_file(self.tap)
-        self.outputDir = self.tapId
+        self.outputDir = e3_io.get_tap_dir(self.tapId)
         self.name = self.__class__.__name__
         self.e2InputDir = e3_io.get_0_input_dir(self.tap)
         self.e2AspOutputDir = e3_io.get_2_asp_output_dir(self.tap)
@@ -59,10 +59,11 @@ class Euler2Command(Command):
         with open(os.path.join(self.outputDir, '%s.stdout' % label), 'w+') as out:
             with open(os.path.join(self.outputDir, '%s.stderr' % label), 'w+') as err:
                 with open(os.path.join(self.outputDir, '%s.returncode' % label), 'w+') as rc:
+                    print command
                     p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
                     stdout, stderr = p.communicate()
-                    #print stdout
-                    #print stderr
+                    print stdout
+                    print stderr
                     out.write(stdout)
                     err.write(stderr)
                     rc.write('%s' % p.returncode)
@@ -192,14 +193,12 @@ class CreateProject(MiscCommand):
         MiscCommand.__init__(self)
     def run(self):
         MiscCommand.run(self)
-        if os.path.isdir(os.path.join('projects', self.name)):
+        if e3_io.exists_project(self.name):
             self.output.append('A project with name ' + self.name + ' already exists')
             return
-        os.makedirs(os.path.join('projects', self.name));
-        with open(os.path.join('projects', self.name, ".history"), 'w') as historyFile:
-            pass
-        with open(os.path.join(".current_project"), 'w') as currentProjectFile:
-            currentProjectFile.write(self.name)
+        e3_io.create_project(self.name)
+        e3_io.set_history(self.name, "")
+        e3_io.set_current_project(self.name)
 
 @logged
 class OpenProject(MiscCommand):
@@ -208,11 +207,10 @@ class OpenProject(MiscCommand):
         MiscCommand.__init__(self)
     def run(self):
         MiscCommand.run(self)
-        if not os.path.isdir(os.path.join('projects', self.name)):
+        if not e3_io.exists_project(self.name):
             self.output.append('A project with name ' + self.name + ' does not exist')
             return
-        with open(os.path.join(".current_project"), 'w') as currentProjectFile:
-            currentProjectFile.write(self.name)
+        e3_io.set_current_project(self.name)
 
 @logged
 class PrintProjectHistory(MiscCommand):
@@ -221,13 +219,14 @@ class PrintProjectHistory(MiscCommand):
         MiscCommand.__init__(self)
     def run(self):
         MiscCommand.run(self)
-        name = None
-        with open('.current_project') as currentProjectFile:
-            name = currentProjectFile.readline()
+        name = e3_io.get_current_project()
         if not name:
             self.output.append('No project open')
             return
-        with open(os.path.join('projects', name, ".history"), 'r') as historyFile:
+        if not e3_io.exists_project(name):
+            self.output.append('Project has been removed')
+            return
+        with open(e3_io.get_history_file(name), 'r') as historyFile:
             for i, line in enumerate(historyFile):
                 line = line.rstrip()
                 command = self.commandProvider.provide(line)
@@ -245,14 +244,15 @@ class RemoveProjectHistory(MiscCommand):
         MiscCommand.__init__(self)
     def run(self):
         MiscCommand.run(self)
-        name = None
-        with open('.current_project') as currentProjectFile:
-            name = currentProjectFile.readlines()[0]
+        name = e3_io.get_current_project()
         if not name:
             self.output.append('No project open')
             return
+        if not e3_io.exists_project(name):
+            self.output.append('Project has been removed')
+            return
         lines = []
-        with open(os.path.join('projects', name, ".history"), 'r') as historyFile:
+        with open(e3_io.get_project_history(name), 'r') as historyFile:
             lines = historyFile.readlines()
             if self.index >= len(lines) or self.index < 0:
                 self.output.append("invalid index")
@@ -264,8 +264,7 @@ class RemoveProjectHistory(MiscCommand):
                     del newLines[self.index]
             else:
                 del newLines[self.index]
-        with open(os.path.join('projects', name, ".history"), 'w') as historyFile:
-            historyFile.write(''.join(newLines))
+        e3_io.set_history(name, ''.join(newLines))
     
 @logged
 class CloseProject(MiscCommand):
@@ -274,8 +273,39 @@ class CloseProject(MiscCommand):
         MiscCommand.__init__(self)
     def run(self):
         MiscCommand.run(self)
-        with open(os.path.join(".current_project"), 'w') as currentProjectFile:
-            pass  
+        e3_io.set_current_project(None) 
+    
+@logged
+class ClearProjects(MiscCommand):
+    @copy_args_to_public_fields
+    def __init__(self):
+        MiscCommand.__init__(self)
+    def run(self):
+        MiscCommand.run(self)
+        e3_io.clear_projects()
+        e3_io.set_current_project(None) 
+    
+@logged
+class RemoveProject(MiscCommand):
+    @copy_args_to_public_fields
+    def __init__(self, name):
+        MiscCommand.__init__(self)
+    def run(self):
+        MiscCommand.run(self)
+        if e3_io.get_current_project() == self.name:
+            e3_io.set_current_project(None)
+        e3_io.remove_project(self.name)
+        
+@logged
+class PrintProjects(MiscCommand):
+    @copy_args_to_public_fields
+    def __init__(self):
+        MiscCommand.__init__(self)
+    def run(self):
+        MiscCommand.run(self)
+        projects = e3_io.get_projects()
+        if projects:
+            print '\n'.join(projects)
         
 @logged 
 class LoadTap(ModelCommand):
@@ -324,6 +354,7 @@ class UseTap(ModelCommand):
         ModelCommand.__init__(self)
     def run(self):
         ModelCommand.run(self)
+        e3_io.set_current_tap(self.tap)
         if self.tap:
             self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
             
@@ -440,7 +471,12 @@ class PrintFix(Euler2Command):
         Euler2Command.run(self)
         repairCommand = '{eulerExecutable} align {cleantax} -o {output} --repair={repairMethod}'.format(eulerExecutable = self.eulerExecutable, 
             cleantax = self.cleantaxFile, output = self.outputDir, repairMethod = self.preferredRepairMethod);
-        self.run_euler(self.name + "-AlignRepair", repairCommand, output)
+        self.run_euler(self.name + "-AlignRepair", repairCommand)
+        
+        if self.is_consistent(os.path.join(self.outputDir, self.name + "-AlignRepair.stdout")):
+            self.output.append("The tap is not inconsistent. I have nothing to show.")
+            return
+        
         self.output.append("Suggested repair options")
         
         with open(os.path.join(self.outputDir, self.name + "-AlignRepair.stdout"), 'r') as stdoutFile:
@@ -462,7 +498,7 @@ class GraphInconsistency(Euler2Command):
         alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
                             cleantax = self.cleantaxFile, output = self.outputDir);                
         self.run_euler(self.name + "-Align", alignCommand)
-        if not self.is_consistent(os.path.join(output, "Align.stdout")):
+        if self.is_consistent(os.path.join(self.outputDir, self.name + "-Align.stdout")):
             self.output.append("The tap is not inconsistent. I have nothing to show.")
             return
         
@@ -471,7 +507,7 @@ class GraphInconsistency(Euler2Command):
         self.run_euler(self.name + "-ShowInconLat", showCommand)
         self.output.append("Take a look at the graph")
         self.executeOutput = []
-        for filename in self.e2LatticesDir:
+        for filename in os.listdir(self.e2LatticesDir):
             if filename.endswith(".%s" % self.preferredImageFormat):
                 self.executeOutput.append(self.imageViewer.format(file = os.path.join(self.e2LatticesDir, filename))) 
             

@@ -34,7 +34,7 @@ class CreateProjectParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "create project <name>\t\t\t\t\t\t\tCreates a project including managable command history"
+        return "create project <name>\t\t\t\t\tCreates a project with <name> including managable command history"
     
 @logged
 class OpenProjectParser(CommandParser):
@@ -47,7 +47,7 @@ class OpenProjectParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "open project <name>\t\t\t\t\t\t\tOpens an existing project with <name>"
+        return "open project <name>\t\t\t\t\tOpens an existing project with <name>"
         
 @logged
 class PrintProjectHistoryParser(CommandParser):
@@ -60,7 +60,7 @@ class PrintProjectHistoryParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "print project history\t\t\t\t\t\t\tPrint the project's command history"
+        return "print project history\t\t\t\t\tPrint the project's command history"
         
 @logged
 class RemoveProjectHistoryParser(CommandParser):
@@ -73,7 +73,7 @@ class RemoveProjectHistoryParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "remove project history <index>\t\t\t\t\t\t\tRemove item with index from the project's command history"
+        return "remove project history <index>\t\t\t\tRemove command with <index> and all dependent commands from the project's command history"
         
 @logged
 class CloseProjectParser(CommandParser):
@@ -86,8 +86,46 @@ class CloseProjectParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "close project\t\t\t\t\t\t\tClose the current project"
-        
+        return "close project\t\t\t\t\t\tClose the current project"
+@logged
+class RemoveProjectParser(CommandParser):    
+    def __init__(self):
+        CommandParser.__init__(self, '^remove project (\S*)$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            return e3_command.RemoveProject(match.group(1))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "remove project <name>\t\t\t\t\tRemove the project with <name>"
+    
+@logged
+class PrintProjectsParser(CommandParser):    
+    def __init__(self):
+        CommandParser.__init__(self, '^print projects$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            return e3_command.PrintProjects()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "print projects\t\t\t\t\t\tPrint an overview of the existing projects"
+    
+@logged
+class ClearProjectsParser(CommandParser):    
+    def __init__(self):
+        CommandParser.__init__(self, '^clear projects')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            return e3_command.ClearProjects()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "clear projects\t\t\t\t\t\tClears all the projects"
+    
 @logged               
 class ByeParser(CommandParser):
     def __init__(self):
@@ -430,10 +468,13 @@ commandParsers = [  ByeParser(),
                     GraphInconsistencyParser(),
                     PrintFixParser(),
                     CreateProjectParser(),
-                    PrintProjectHistoryParser(),
-                    RemoveProjectHistoryParser(),
+                    PrintProjectsParser(),
+                    OpenProjectParser(),
                     CloseProjectParser(),
-                    OpenProjectParser()
+                    RemoveProjectParser(),
+                    ClearProjectsParser(),
+                    PrintProjectHistoryParser(),
+                    RemoveProjectHistoryParser()
                 ]              
                                                 
 class CommandProvider(object):
