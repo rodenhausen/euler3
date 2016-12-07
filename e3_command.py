@@ -61,7 +61,8 @@ class Euler2Command(Command):
         self.e2PWsDir = e3_io.get_4_pws_dir(self.tap)
         self.e2LatticesDir = e3_io.get_6_lattices_dir(self.tap)
         self.isConsistent = True
-        self.maxN = None
+        if not hasattr(self, 'maxN'):
+            self.maxN = None
     def run(self):
         Command.run(self)
     def run_euler(self, command):
@@ -248,13 +249,15 @@ class PrintProjectHistory(MiscCommand):
         with open(e3_io.get_history_file(name), 'r') as historyFile:
             for i, line in enumerate(historyFile):
                 line = line.rstrip()
-                command = self.commandProvider.provide(line)
+                uuidPart = line.split(' ', 1)[0]
+                commandPart = line.split(' ', 1)[1]
+                command = self.commandProvider.provide(commandPart)
                 if isinstance(command, ModelCommand):
-                    self.output.append(str(i) + ". [Tap] " + line)
+                    self.output.append(str(i) + ". [Tap] " + commandPart + " (" + uuidPart + ")")
                 elif isinstance(command, Euler2Command):
-                    self.output.append(str(i) + ". [Reasoning] " + line)
+                    self.output.append(str(i) + ". [Reasoning] " + commandPart + " (" + uuidPart + ")")
                 elif isinstance(command, MiscCommand):
-                    self.output.append(str(i) + ". [Misc] " + line)
+                    self.output.append(str(i) + ". [Misc] " + commandPart + " (" + uuidPart + ")")
                     
 @logged
 class RemoveProjectHistory(MiscCommand):

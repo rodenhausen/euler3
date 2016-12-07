@@ -9,6 +9,7 @@ import e3_model
 import e3_command
 from os.path import expanduser
 import shutil
+import uuid
 
 def get_config():
     config = None
@@ -223,13 +224,28 @@ def get_tap_name(id):
     return None
 
 def append_project_history(input, command):
-    if not isinstance(command, e3_command.MiscCommand):
+    #if not isinstance(command, e3_command.MiscCommand):
+        id = str(uuid.uuid4())
         currentProject = None
         with open(get_current_project_file(), 'r') as currentProjectFile:
             currentProject = currentProjectFile.readline()
         if currentProject:
             with open(get_history_file(currentProject), 'a') as historyFile:
-                historyFile.write(input + '\n')
+                historyFile.write(id + " " + input + '\n')
+            tap = get_current_tap()
+            stepDir = os.path.join(get_project_dir(currentProject), id)
+            if isinstance(command, e3_command.MiscCommand):
+                os.makedirs(stepDir)
+            if isinstance(command, e3_command.ModelCommand):
+                shutil.copytree(get_tap_dir(tap.get_id()), stepDir)
+                pass
+            if isinstance(command, e3_command.Euler2Command):
+                shutil.copytree(get_tap_dir(tap.get_id()), stepDir)
+                pass
+            with open(os.path.join(stepDir, '.outputs'), 'w') as f:
+                f.write('\n'.join(command.get_output()))
+            with open(os.path.join(stepDir, '.command'), 'w') as f:
+                f.write(input)
 
 def get_tap_file_from_id(tapId):
     tap_file = os.path.join(get_tap_dir(tapId), ".tap")
@@ -269,7 +285,7 @@ def get_current_project_file():
 
 def get_history_file(project):
     if exists_project(project):
-        history_file = os.path.join(get_project_dir(project), ".current_project")
+        history_file = os.path.join(get_project_dir(project), ".history")
         if not os.path.isfile(history_file):
             with open(history_file, 'w') as f:
                 pass
