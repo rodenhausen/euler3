@@ -36,6 +36,13 @@ class Euler2Command(Command):
     @copy_args_to_public_fields
     def __init__(self, tap):
         Command.__init__(self)
+        self.alignCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir}'
+        self.alignConsistencyCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir} --consistency'
+        self.alignMaxNCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir} -n {maxN}'
+        self.alignRepairCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir} --repair={repairMethod}'
+        self.showIVCommand = '{eulerExecutable} show iv {cleantaxFile} -o {outputDir} --{imageFormat}';
+        self.showPWCommand = '{eulerExecutable} show -o {outputDir} pw --{imageFormat}'
+        self.showInconLatCommand = '{eulerExecutable} show -o {outputDir} inconLat --{imageFormat}'
         self.eulerXPath = self.config['eulerXPath']
         self.imageViewer = self.config['imageViewer']
         self.maxPossibleWorldsToShow = self.config['maxPossibleWorldsToShow']
@@ -53,26 +60,40 @@ class Euler2Command(Command):
         self.e2AspOutputDir = e3_io.get_2_asp_output_dir(self.tap)
         self.e2PWsDir = e3_io.get_4_pws_dir(self.tap)
         self.e2LatticesDir = e3_io.get_6_lattices_dir(self.tap)
+        self.isConsistent = True
+        self.maxN = None
     def run(self):
         Command.run(self)
-    def run_euler(self, label, command):
-        with open(os.path.join(self.outputDir, '%s.stdout' % label), 'w+') as out:
-            with open(os.path.join(self.outputDir, '%s.stderr' % label), 'w+') as err:
-                with open(os.path.join(self.outputDir, '%s.returncode' % label), 'w+') as rc:
+    def run_euler(self, command):
+        # add parameters to the commanad that are relevant to avoid re-runs
+        # by at the same time keeping the file name minimal
+        command = command.format(eulerExecutable = '{eulerExecutable}', 
+                cleantaxFile = '{cleantaxFile}', outputDir = '{outputDir}', imageFormat = '{imageFormat}', 
+                maxN = self.maxN)
+        stdoutFile = os.path.join(self.outputDir, '%s.stdout' % command)
+        stderrFile = os.path.join(self.outputDir, '%s.stderr' % command)
+        returnCodeFile = os.path.join(self.outputDir, '%s.returncode' % command)
+        if os.path.isfile(stdoutFile):
+            return
+        # add remaining parameters
+        command = command.format(eulerExecutable = self.eulerExecutable, 
+                cleantaxFile = self.cleantaxFile, outputDir = self.outputDir, imageFormat = self.preferredImageFormat, 
+                maxN = self.maxN);
+        with open(stdoutFile, 'w+') as out:
+            with open(stderrFile, 'w+') as err:
+                with open(returnCodeFile, 'w+') as rc:
                     print command
                     p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
                     stdout, stderr = p.communicate()
                     print stdout
                     print stderr
+                    if "Input is inconsistent" in stdout:
+                        self.isConsistent = False
                     out.write(stdout)
                     err.write(stderr)
                     rc.write('%s' % p.returncode)
-    def is_consistent(self, stdoutFile):
-        with open(stdoutFile, 'r') as f:
-            for line in f:
-                if line.startswith('Input is inconsistent'):
-                    return False
-        return True
+    def is_consistent(self):
+        return self.isConsistent
     def get_possible_worlds(self):
         possibleWorlds = []
         with open(os.path.join(self.e2AspOutputDir, '.cleantax.pw'), 'r') as f:
@@ -88,8 +109,6 @@ class Euler2Command(Command):
             if len(currentWorld) > 0:
                 possibleWorlds.append(currentWorld.rstrip())
         return possibleWorlds
-    def is_complete(self):
-        return False
     
 class ModelCommand(Command):                    
     def __init__(self):
@@ -396,17 +415,12 @@ class GraphWorlds(Euler2Command):
         Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
-            cleantax = self.cleantaxFile, output = self.outputDir);
-        self.run_euler(self.name + "-Align", alignCommand)
-        if not self.is_consistent(os.path.join(self.outputDir, self.name + "-Align.stdout")):
+        self.run_euler(self.alignCommand)
+        if not self.is_consistent():
             self.output.append("The tap is inconsistent")
             return
         
-        showCommand = '{eulerExecutable} show -o {output} pw --{format}'.format(eulerExecutable = self.eulerExecutable, 
-            output = self.outputDir, format = self.preferredImageFormat);
-        self.run_euler(self.name + "-ShowPW", showCommand)
-        
+        self.run_euler(self.showPWCommand)
         possibleWorldsCount = len(self.get_possible_worlds())
         if possibleWorldsCount <= self.maxPossibleWorldsToShow:
             self.output.append("There are {count} possible worlds. I show them all to you.".format(
@@ -421,9 +435,7 @@ class GraphWorlds(Euler2Command):
             if filename.endswith(".%s" % self.preferredImageFormat) and openCount < self.maxPossibleWorldsToShow:
                 openCount += 1
                 self.executeOutput.append(self.imageViewer.format(file = os.path.join(self.e2PWsDir, filename)))
-    def is_complete(self):
-        return False
-        
+                
 @logged 
 class IsConsistent(Euler2Command):
     @copy_args_to_public_fields
@@ -431,36 +443,29 @@ class IsConsistent(Euler2Command):
         Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output} --consistency'.format(
-            eulerExecutable = self.eulerExecutable, cleantax = self.cleantaxFile, output = self.outputDir);
-        self.run_euler(self.name + "-AlignConsistency", alignCommand)
+        self.run_euler(self.alignConsistencyCommand)
         
-        if self.is_consistent(os.path.join(self.outputDir, self.name + "-AlignConsistency.stdout")):
+        if self.is_consistent():
             self.output.append("yes")
         else:
             self.output.append("no")
-    def is_complete(self):
-        return False
-            
+    
 @logged 
 class MoreWorldsOrEqualThan(Euler2Command):
     @copy_args_to_public_fields
-    def __init__(self, tap, thanVariable):
+    def __init__(self, tap, maxN):
         Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output} -n {thanVariable}'.format(
-            eulerExecutable = self.eulerExecutable, cleantax = self.cleantaxFile, output = self.outputDir, 
-            thanVariable = self.thanVariable);
-        self.run_euler(self.name + "-Align", alignCommand)
-        
+        self.run_euler(self.alignMaxNCommand)
+               
         possibleWorldsCount = len(self.get_possible_worlds())
-        if possibleWorldsCount < self.thanVariable:
-            self.output.append("There are < {thanVariable} possible worlds. There are {count}.".format(
-                thanVariable = self.thanVariable, count = possibleWorldsCount))
+        if possibleWorldsCount < self.maxN:
+            self.output.append("There are < {maxN} possible worlds. There are {count}.".format(
+                maxN = self.maxN, count = possibleWorldsCount))
         else:
-            self.output.append("There are >= {thanVariable} possible worlds.".format(
-                thanVariable = self.thanVariable))
+            self.output.append("There are >= {maxN} possible worlds.".format(
+                maxN = self.maxN))
             
 @logged 
 class PrintFix(Euler2Command):
@@ -469,11 +474,9 @@ class PrintFix(Euler2Command):
         Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        repairCommand = '{eulerExecutable} align {cleantax} -o {output} --repair={repairMethod}'.format(eulerExecutable = self.eulerExecutable, 
-            cleantax = self.cleantaxFile, output = self.outputDir, repairMethod = self.preferredRepairMethod);
-        self.run_euler(self.name + "-AlignRepair", repairCommand)
+        self.run_euler(self.alignRepairCommand)
         
-        if self.is_consistent(os.path.join(self.outputDir, self.name + "-AlignRepair.stdout")):
+        if self.is_consistent():
             self.output.append("The tap is not inconsistent. I have nothing to show.")
             return
         
@@ -494,17 +497,13 @@ class GraphInconsistency(Euler2Command):
     def __init__(self, tap):
         Euler2Command.__init__(self, tap)
     def run(self):
-        Euler2Command.run(self)
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
-                            cleantax = self.cleantaxFile, output = self.outputDir);                
-        self.run_euler(self.name + "-Align", alignCommand)
-        if self.is_consistent(os.path.join(self.outputDir, self.name + "-Align.stdout")):
+        Euler2Command.run(self)             
+        self.run_euler(self.alignCommand)
+        if self.is_consistent():
             self.output.append("The tap is not inconsistent. I have nothing to show.")
             return
         
-        showCommand = '{eulerExecutable} show -o {output} inconLat --{format}'.format(eulerExecutable = self.eulerExecutable, 
-                        output = self.outputDir, format = self.preferredImageFormat);
-        self.run_euler(self.name + "-ShowInconLat", showCommand)
+        self.run_euler(self.showInconLatCommand)
         self.output.append("Take a look at the graph")
         self.executeOutput = []
         for filename in os.listdir(self.e2LatticesDir):
@@ -518,10 +517,8 @@ class PrintWorlds(Euler2Command):
         Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        alignCommand = '{eulerExecutable} align {cleantax} -o {output}'.format(eulerExecutable = self.eulerExecutable, 
-            cleantax = self.cleantaxFile, output = self.outputDir);
-        self.run_euler(self.name + "-Align", alignCommand)        
-        if not self.is_consistent(os.path.join(self.outputDir, self.name + "-Align.stdout")):
+        self.run_euler(self.alignCommand)        
+        if not self.is_consistent():
             self.output.append("The tap is inconsistent")
             return
         
@@ -542,10 +539,7 @@ class GraphTap(Euler2Command):
         Euler2Command.__init__(self, tap)
     def run(self):
         Euler2Command.run(self)
-        showCommand = '{eulerExecutable} show iv {cleantax} -o {output} --{format}'.format(eulerExecutable = self.eulerExecutable, 
-            cleantax = self.cleantaxFile, output = self.outputDir, format = self.preferredImageFormat);
-        self.run_euler(self.name + "-ShowIV", showCommand)
-        
+        self.run_euler(self.showIVCommand)
         self.output.append("Take a look at the graph")
         self.executeOutput = []
         for filename in os.listdir(self.e2InputDir):
