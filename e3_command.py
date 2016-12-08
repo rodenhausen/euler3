@@ -86,9 +86,11 @@ class Euler2Command(Command):
         coverage = "" if self.isCoverage else "--disablecov"
         disjointness = "" if self.isSiblingDisjointness else "--disablesib"
         command = command.format(eulerExecutable = '{eulerExecutable}', 
-                cleantaxFile = '{cleantaxFile}', outputDir = '{outputDir}', imageFormat = '{imageFormat}', 
-                reasoner = '{reasoner}', 
-                maxN = self.maxN, regions = self.regions, coverage = coverage, disjointness = disjointness)
+                cleantaxFile = '{cleantaxFile}', outputDir = '{outputDir}', 
+                #imageFormat = '{imageFormat}', 
+                #reasoner = '{reasoner}', 
+                repairMethod = self.repairMethod,  maxN = self.maxN, regions = self.regions, coverage = coverage, 
+                disjointness = disjointness, imageFormat = self.imageFormat, reasoner = self.reasoner)
         stdoutFile = os.path.join(self.outputDir, '%s.stdout' % command)
         stderrFile = os.path.join(self.outputDir, '%s.stderr' % command)
         returnCodeFile = os.path.join(self.outputDir, '%s.returncode' % command)
@@ -136,18 +138,42 @@ class Euler2Command(Command):
                 possibleWorlds.append(currentWorld.rstrip())
         return possibleWorlds
     
-class ModelCommand(Command):                    
+class ModelCommand(Command):
+    @copy_args_to_public_fields                 
     def __init__(self):
         Command.__init__(self)
     def run(self):
         Command.run(self)    
-                    
+              
+class SetConfig(MiscCommand):
+    @copy_args_to_public_fields
+    def __init__(self, key, value):
+        MiscCommand.__init__(self)
+    def run(self):
+        MiscCommand.run(self)
+        if not e3_io.exists_config(self.key):
+            self.output.append("Configuration parameter " + self.key + " does not exist.")
+            return
+        e3_io.set_config(self.key, self.value)
+        self.output.append("Configuration updated: " + self.key + " = " + self.value)
+
+class PrintConfig(MiscCommand):
+    @copy_args_to_public_fields
+    def __init__(self):
+        MiscCommand.__init__(self)
+    def run(self):
+        MiscCommand.run(self)
+        config = e3_io.get_config()
+        for key in config:
+            self.output.append(key + " = " + config[key]) 
+         
 @logged 
 class Bye(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
+        MiscCommand.run(self)
         self.output.append("See you soon!")
         self.executeOutput.append("Exit")
         
@@ -167,9 +193,9 @@ class Help(MiscCommand):
 class NameTap(MiscCommand):
     @copy_args_to_public_fields
     def __init__(self, tap, name):
-        Command.__init__(self)
+        MiscCommand.__init__(self)
     def run(self):
-        Command.run(self)
+        MiscCommand.run(self)
         e3_io.set_name(self.name, self.tap);
         self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
                 

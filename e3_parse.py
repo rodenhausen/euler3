@@ -226,7 +226,31 @@ class SetCoverageParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "set coverage <true|false> [<tap>]\tSets the reasoning coverage for the current tap or the optionally provided <tap>"
+        return "set coverage <true|false> [<tap>]\t\t\tSets the reasoning coverage for the current tap or the optionally provided <tap>"
+
+class SetConfigParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^set config (\S+)\s*=\s*(\S*)$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            return e3_command.SetConfig(match.group(1), match.group(2))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "set config <key>=<value>\t\t\t\tSets the configiguration <parameter> with <value>"
+
+class PrintConfigParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^print config$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            return e3_command.PrintConfig()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "print config\t\t\t\t\t\tPrints the configiguration settings"
 
 class SetSiblingDisjointnessParser(CommandParser):
     def __init__(self):
@@ -244,7 +268,7 @@ class SetSiblingDisjointnessParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "set sibling disjointness <true|false> [<tap>]\tSets the reasoning regions for the current tap or the optionally provided <tap>"
+        return "set sibling disjointness <true|false> [<tap>]\t\tSets the reasoning regions for the current tap or the optionally provided <tap>"
 
 class SetRegionsParser(CommandParser):
     def __init__(self):
@@ -262,7 +286,7 @@ class SetRegionsParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "set regions <mnpw|mncb|mnve|vrpw|vrve> [<tap>]\tSets the reasoning regions for the current tap or the optionally provided <tap>"
+        return "set regions <mnpw|mncb|mnve|vrpw|vrve> [<tap>]\t\tSets the reasoning regions for the current tap or the optionally provided <tap>"
 
 
 class NameTapParser(CommandParser):
@@ -447,7 +471,7 @@ class GraphFourInOneParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "graph four in one [<tap>]\t\t\t\t\tCreates a four-in-one visualization of the current tap or the optionally provided <tap>"
+        return "graph four in one [<tap>]\t\t\t\tCreates a four-in-one visualization of the current tap or the optionally provided <tap>"
     
 class GraphSummaryParser(CommandParser):
     def __init__(self):
@@ -565,6 +589,9 @@ commandParsers = [  ByeParser(),
                     PrintArticulationsParser(),
                     AddArticulationParser(),
                     RemoveArticulationParser(),
+                    SetSiblingDisjointnessParser(),
+                    SetCoverageParser(),
+                    SetRegionsParser(),
                     NameTapParser(),
                     ClearNamesParser(),
                     PrintNamesParser(),
@@ -574,7 +601,10 @@ commandParsers = [  ByeParser(),
                     MoreWorldsOrEqualThanParser(),
                     GraphWorldsParser(), 
                     PrintWorldsParser(),
+                    GraphSummaryParser(),
+                    GraphFourInOneParser(),
                     GraphInconsistencyParser(),
+                    GraphAmbiguityParser(),
                     PrintFixParser(),
                     CreateProjectParser(),
                     PrintProjectsParser(),
@@ -583,13 +613,9 @@ commandParsers = [  ByeParser(),
                     RemoveProjectParser(),
                     ClearProjectsParser(),
                     PrintProjectHistoryParser(),
-                    RemoveProjectHistoryParser(), 
-                    GraphSummaryParser(),
-                    GraphFourInOneParser(),
-                    GraphAmbiguityParser(),
-                    SetSiblingDisjointnessParser(),
-                    SetCoverageParser(),
-                    SetRegionsParser()
+                    RemoveProjectHistoryParser(),
+                    SetConfigParser(),
+                    PrintConfigParser()
                 ]              
                                                 
 class CommandProvider(object):

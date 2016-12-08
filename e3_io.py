@@ -34,6 +34,16 @@ def get_config():
         yaml.dump(config, f, default_flow_style=False)
     return config
 
+def exists_config(key):
+    return key in get_config()
+
+
+def set_config(key, value):
+    config = get_config()
+    config[key] = value
+    with open(get_config_file(), 'w') as f:
+        yaml.dump(config, f, default_flow_style=False)
+
 def set_name(name, tap):
     names = { }
     with open(get_names_file(), "r+") as namesFile:
