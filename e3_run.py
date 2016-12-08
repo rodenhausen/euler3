@@ -18,23 +18,34 @@ class Run(object):
         pass
     def run(self):
         pass
+    def executeCommand(self, command):
+        import e3_io
+        if command != None:
+            command.run()
+            e3_io.append_project_history(input, command)
+            if command.get_output():
+                for output in command.get_output():
+                    print output
+            if command.get_execute_output():
+                with open(os.devnull, 'w') as devnull:
+                    for execute in command.get_execute_output():
+                        if execute == 'Exit':
+                            sys.exit()
+                        else:
+                            p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
+        else:
+            print "Unrecognized command"
     
 @logged
 class OneShot(Run):
     @copy_args_to_public_fields
-    def __init__(self, commandLineProvider):
+    def __init__(self, commandProvider):
         Run.__init__(self)
     def run(self):
+        import e3_io
         input = ' '.join(sys.argv[1:])
-        commandLine = self.commandLineProvider.provide(input)
-        if commandLine != None:
-            pass
-            #self.config.command = commandLine.commandClass 
-            #self.obj_graph = pinject.new_object_graph(binding_specs=[self.config])
-            #execution = self.obj_graph.provide(Execution)
-            #execution.execute()
-        else:
-            print "Unrecognized command"
+        command = self.commandProvider.provide(input)
+        self.executeCommand(command)
         
 @logged 
 class Interactive(Run):
@@ -51,18 +62,4 @@ class Interactive(Run):
         while True:
             input = raw_input('e3 > ')
             command = self.commandProvider.provide(input)
-            if command != None:
-                command.run()
-                e3_io.append_project_history(input, command)
-                if command.get_output():
-                    for output in command.get_output():
-                        print output
-                if command.get_execute_output():
-                    with open(os.devnull, 'w') as devnull:
-                        for execute in command.get_execute_output():
-                            if execute == 'Exit':
-                                sys.exit()
-                            else:
-                                p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
-            else:
-                print "Unrecognized command"
+            self.executeCommand(command)
