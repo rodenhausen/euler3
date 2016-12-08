@@ -21,11 +21,12 @@ def get_config():
                 'eulerXPath': os.path.join(get_home_dir(), 'git', 'EulerX'),
                 'imageViewer': 'eog {file}',
                 'maxPossibleWorldsToShow': '5',
-                'preferredImageFormat': 'svg',
-                'preferredRepairMethod': 'topdown',
+                'imageFormat': 'svg',
+                'repairMethod': 'topdown',
                 'defaultIsCoverage': 'True',
                 'defaultIsSiblingDisjointness': 'True',
-                'defaultRegions': 'mnpw'
+                'defaultRegions': 'mnpw',
+                'reasoner': 'gringo'
                 }
     config = defaultConfig
     with open(get_config_file(), 'w') as f:
@@ -267,11 +268,20 @@ def get_cleantax_file(tap):
 def get_0_input_dir(tap):
     return os.path.join(get_taps_dir(), tap.get_id(), "0-Input")
 
+def get_1_asp_input_dir(tap):
+    return os.path.join(get_taps_dir(), tap.get_id(), "1-ASP-input-code")
+
 def get_2_asp_output_dir(tap):
     return os.path.join(get_taps_dir(), tap.get_id(), "2-ASP-output")
 
+def get_3_mir_dir(tap):
+    return os.path.join(get_taps_dir(), tap.get_id(), "3-MIR")
+
 def get_4_pws_dir(tap):
     return os.path.join(get_taps_dir(), tap.get_id(), "4-PWs")
+
+def get_5_aggregates_dir(tap):
+    return os.path.join(get_taps_dir(), tap.get_id(), "5-Aggregates")
 
 def get_6_lattices_dir(tap):
     return os.path.join(get_taps_dir(), tap.get_id(), "6-Lattices")

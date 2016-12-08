@@ -210,6 +210,61 @@ class RemoveArticulationParser(CommandParser):
     def get_help(self):
         return "remove articulation <articulation_index> [<tap>]\tRemoves articulation with index <articulation_index> from the current tap or the optionally provided <tap>"
 
+class SetCoverageParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^set coverage (\S+)( (\S*))?$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            tap = e3_io.get_current_tap()
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))
+            if tap:
+                return e3_command.SetCoverage(tap, match.group(1))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "set coverage <true|false> [<tap>]\tSets the reasoning coverage for the current tap or the optionally provided <tap>"
+
+class SetSiblingDisjointnessParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^set sibling disjointness (\S+)( (\S*))?$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            tap = e3_io.get_current_tap()
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))
+            if tap:
+                return e3_command.SetSiblingDisjointness(tap, match.group(1))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "set sibling disjointness <true|false> [<tap>]\tSets the reasoning regions for the current tap or the optionally provided <tap>"
+
+class SetRegionsParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^set regions (\S+)( (\S*))?$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            tap = e3_io.get_current_tap()
+            if match.group(2) and match.group(3):
+                tap = get_tap_from_id_or_name(match.group(3))
+            if tap:
+                return e3_command.SetRegions(tap, match.group(1))
+            else:
+                raise Exception('Tap %s not found' % match.group(3))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "set regions <mnpw|mncb|mnve|vrpw|vrve> [<tap>]\tSets the reasoning regions for the current tap or the optionally provided <tap>"
+
+
 class NameTapParser(CommandParser):
     def __init__(self):
         CommandParser.__init__(self, '^name tap (\S*)( (\S*))?$')
@@ -375,6 +430,60 @@ class GraphTapParser(CommandParser):
             raise Exception('Unrecognized command line')
     def get_help(self):
         return "graph tap [<tap>]\t\t\t\t\tCreates a graph visualization of the current tap or the optionally provided <tap>"
+    
+class GraphFourInOneParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^graph four in one( (\S*))?$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            tap = e3_io.get_current_tap()
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
+            if tap:
+                return e3_command.GraphFourInOne(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "graph tap [<tap>]\t\t\t\t\tCreates a four-in-one visualization of the current tap or the optionally provided <tap>"
+    
+class GraphSummaryParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^graph summary( (\S*))?$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            tap = e3_io.get_current_tap()
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
+            if tap:
+                return e3_command.GraphSummary(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "graph tap [<tap>]\t\t\t\t\tCreates a summary visualization of the current tap or the optionally provided <tap>"
+        
+class GraphAmbiguityParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^graph ambiguity( (\S*))?$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            tap = e3_io.get_current_tap()
+            if match.group(1) and match.group(2):
+                tap = get_tap_from_id_or_name(match.group(2))
+            if tap:
+                return e3_command.GraphAmbiguity(tap)
+            else:
+                raise Exception('Tap %s not found' % match.group(2))
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "graph ambiguity [<tap>]\t\t\t\t\tCreates an ambiguity visualization of the current tap or the optionally provided <tap>"
         
 class IsConsistentParser(CommandParser):
     def __init__(self):
@@ -474,7 +583,13 @@ commandParsers = [  ByeParser(),
                     RemoveProjectParser(),
                     ClearProjectsParser(),
                     PrintProjectHistoryParser(),
-                    RemoveProjectHistoryParser()
+                    RemoveProjectHistoryParser(), 
+                    GraphSummaryParser(),
+                    GraphFourInOneParser(),
+                    GraphAmbiguityParser(),
+                    SetSiblingDisjointnessParser(),
+                    SetCoverageParser(),
+                    SetRegionsParser()
                 ]              
                                                 
 class CommandProvider(object):
