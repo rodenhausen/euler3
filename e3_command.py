@@ -167,6 +167,17 @@ class PrintConfig(MiscCommand):
         config = e3_io.get_config()
         for key in config:
             self.output.append(key + " = " + config[key]) 
+          
+@logged 
+class Reset(MiscCommand):
+    @copy_args_to_public_fields
+    def __init__(self):
+        MiscCommand.__init__(self)
+    def run(self):
+        MiscCommand.run(self)
+        e3_io.reset()
+        self.output.append("Reset successful")
+        self.output.append("Tap: None")
          
 @logged 
 class Bye(MiscCommand):

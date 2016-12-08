@@ -22,6 +22,19 @@ class CommandParser(object):
         pass
     def get_help(self):
         pass
+
+@logged
+class ResetParser(CommandParser):
+    def __init__(self):
+        CommandParser.__init__(self, '^reset$')
+    def get_command(self, input):
+        match = self.is_command(input)
+        if match:
+            return e3_command.Reset()
+        else:
+            raise Exception('Unrecognized command line')
+    def get_help(self):
+        return "reset\t\t\t\t\t\t\tResets e3 to factory settings"
     
 @logged
 class CreateProjectParser(CommandParser):
@@ -615,7 +628,8 @@ commandParsers = [  ByeParser(),
                     PrintProjectHistoryParser(),
                     RemoveProjectHistoryParser(),
                     SetConfigParser(),
-                    PrintConfigParser()
+                    PrintConfigParser(),
+                    ResetParser()
                 ]              
                                                 
 class CommandProvider(object):

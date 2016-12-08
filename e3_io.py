@@ -12,6 +12,10 @@ from os.path import expanduser
 import shutil
 import uuid
 
+def reset():
+    shutil.rmtree(get_e3_dir())
+    get_config()
+
 def get_config():
     config = None
     with open(get_config_file(), 'r') as f:
