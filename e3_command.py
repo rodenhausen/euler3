@@ -221,7 +221,7 @@ class PrintNames(MiscCommand):
         if names:
             self.output.append('\n'.join(names))
         else:
-            self.output.append('No names recorded.')
+            self.output.append('No names stored.')
     
 class ClearNames(MiscCommand):
     @copy_args_to_public_fields
@@ -386,8 +386,10 @@ class PrintProjects(MiscCommand):
         MiscCommand.run(self)
         projects = e3_io.get_projects()
         if projects:
-            print '\n'.join(projects)
-        
+            self.output.append('\n'.join(projects))
+        else:
+            self.output.append('No projects stored.')
+            
 @logged 
 class LoadTap(ModelCommand):
     @copy_args_to_public_fields
