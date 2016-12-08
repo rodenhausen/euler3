@@ -447,7 +447,7 @@ class GraphFourInOneParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "graph tap [<tap>]\t\t\t\t\tCreates a four-in-one visualization of the current tap or the optionally provided <tap>"
+        return "graph four in one [<tap>]\t\t\t\t\tCreates a four-in-one visualization of the current tap or the optionally provided <tap>"
     
 class GraphSummaryParser(CommandParser):
     def __init__(self):
@@ -465,7 +465,7 @@ class GraphSummaryParser(CommandParser):
         else:
             raise Exception('Unrecognized command line')
     def get_help(self):
-        return "graph tap [<tap>]\t\t\t\t\tCreates a summary visualization of the current tap or the optionally provided <tap>"
+        return "graph summary [<tap>]\t\t\t\t\tCreates a summary visualization of the current tap or the optionally provided <tap>"
         
 class GraphAmbiguityParser(CommandParser):
     def __init__(self):

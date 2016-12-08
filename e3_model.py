@@ -7,7 +7,7 @@ import hashlib
 
 class Tap(object):
     @copy_args_to_public_fields
-    def __init__(self, isCoverage, isSiblingDisjointness, regions, taxonomyA, taxonomyB, articulations):
+    def __init__(self, isCoverage, isSiblingDisjointness, regions, taxonomies, articulations):
         pass
     def add_articulation(self, articulation):
         self.articulations.append(articulation)
@@ -18,16 +18,19 @@ class Tap(object):
         for x in range(1, len(self.articulations)):
             indices.append(str(x) + ". ")
         articulationLines = [x + y for x, y in zip(indices, self.articulations)]
-        indices = ['']
-        for x in range(1, len(self.taxonomyA)):
-            indices.append(str(x) + ". ")
-        taxonomyALines = [x + y for x, y in zip(indices, self.taxonomyA)]
-        indices = ['']
-        for x in range(1, len(self.taxonomyB)):
-            indices.append(str(x) + ". ")
-        taxonomyBLines = [x + y for x, y in zip(indices, self.taxonomyB)]
-        return ('isCoverage:' + str(self.isCoverage) + '\nisSiblingDisjontness:' + str(self.isSiblingDisjointness) + '\nRegions:' + self.regions + '\n' + 
-                '\n\n'.join(['\n'.join(taxonomyALines), '\n'.join(taxonomyBLines), '\n'.join(articulationLines)]))
+        dataLines = []
+        for taxonomy in self.taxonomies:
+            indices = ['']
+            for x in range(1, len(taxonomy)):
+                indices.append(str(x) + ". ")
+            taxonomyLines = [x + y for x, y in zip(indices, taxonomy)]
+            dataLines.append('\n'.join(taxonomyLines))
+        dataLines.append('\n'.join(articulationLines))
+        value = ('Coverage:' + str(self.isCoverage) + '\nSibling Disjontness:' + str(self.isSiblingDisjointness) + '\nRegions:' + self.regions + '\n' + 
+                '\n\n'.join(dataLines))
+        #print value
+        return value
+        
     def get_id(self):
         return hashlib.sha1(self.__str__()).hexdigest()
     

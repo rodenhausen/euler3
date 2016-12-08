@@ -7,6 +7,7 @@ import yaml
 import os.path
 import e3_model
 import e3_command
+import e3_validation
 from os.path import expanduser
 import shutil
 import uuid
@@ -109,25 +110,21 @@ def store_tap(tap):
         f.write(str(tap.isSiblingDisjointness) + '\n')
         f.write(tap.regions + '\n')
         f.write('\n')
-        for line in tap.taxonomyA:
-            f.write(line + '\n')
-        f.write('\n')
-        for line in tap.taxonomyB:
-            f.write(line + '\n')
-        f.write('\n')
+        for taxonomy in tap.taxonomies:
+            for line in taxonomy:
+                f.write(line + '\n')
+            f.write('\n')
         for line in tap.articulations:
             f.write(line + '\n')
     store_tap_to_cleantax(tap)
 
 def store_tap_to_cleantax(tap):
     cleantaxFile = get_cleantax_file(tap)
-    with open(cleantaxFile, 'w') as f:        
-        for line in tap.taxonomyA:
-            f.write(line + '\n')
-        f.write('\n')
-        for line in tap.taxonomyB:
-            f.write(line + '\n')
-        f.write('\n')
+    with open(cleantaxFile, 'w') as f:  
+        for taxonomy in tap.taxonomies:      
+            for line in taxonomy:
+                f.write(line + '\n')
+            f.write('\n')
         for line in tap.articulations:
             f.write(line + '\n')
             
@@ -136,15 +133,11 @@ def get_tap(tapId):
     if not os.path.isfile(tapFile):
         return None
     config = get_config()
+    cleantax = []
     with open(tapFile, 'r') as f:
         isCoverage = config['defaultIsCoverage']
         isSiblingDisjointness = config['defaultIsSiblingDisjointness']
         regions = config['defaultRegions']
-        taxonomyA = []
-        taxonomyB = []
-        articulations = []
-        taxonomyAComplete = False
-        taxonomyBComplete = False
         for i, line in enumerate(f):
             if i == 0:
                 isCoverage = line.rstrip() == 'True'
@@ -153,44 +146,51 @@ def get_tap(tapId):
             elif i == 2:
                 regions = line.rstrip()
             elif i >= 4:
-                if len(line.strip()) == 0:
-                    if not taxonomyAComplete:
-                        taxonomyAComplete = True
-                    elif not taxonomyBComplete:
-                        taxonomyBComplete = True 
-                else:
-                    line = line.rstrip()
-                    if not taxonomyAComplete:
-                        taxonomyA.append(line)
-                    elif not taxonomyBComplete:
-                        taxonomyB.append(line)
-                    else: articulations.append(line)
-    return e3_model.Tap(isCoverage, isSiblingDisjointness, regions, taxonomyA, taxonomyB, articulations)
+                cleantax.append(line)
+    return get_tap_from_cleantax(isCoverage, isSiblingDisjointness, regions, cleantax)
       
-def get_tap_from_cleantax(cleanTaxFile):
+def get_tap_from_cleantax_file(cleantaxFile):
     config = get_config()
-    with open(cleanTaxFile, 'r') as f:
+    with open(cleantaxFile, 'r') as f:
         lines = f.readlines()
+        return get_tap_from_cleantax(config['defaultIsCoverage'], config['defaultIsSiblingDisjointness'], config['defaultRegions'], lines)
+    
+      
+def get_tap_from_cleantax(isCoverage, isSiblingDisjointness, regions, cleantax):
+    e3_validation.validate_cleantax(cleantax)
+    taxonomies = get_taxonomies(cleantax)
+    articulations = get_articulations(cleantax)
+    return e3_model.Tap(isCoverage, isSiblingDisjointness, regions, taxonomies, articulations)
+
+def get_taxonomies(cleantax):
+    taxonomies = []
+    taxonomy = []
+    articulations = []
+    taxonomiesComplete = False
+    for line in cleantax:
+        line = line.rstrip()
+        if len(line.strip()) == 0:
+            if not taxonomiesComplete and not len(taxonomy) == 0:
+                taxonomies.append(taxonomy)
+                taxonomy = []
+                continue
         
-        taxonomyA = []
-        taxonomyB = []
-        articulations = []
-        taxonomyAComplete = False
-        taxonomyBComplete = False
-        for line in lines:
-            if len(line.strip()) == 0:
-                if not taxonomyAComplete:
-                    taxonomyAComplete = True
-                elif not taxonomyBComplete:
-                    taxonomyBComplete = True 
-            else:
-                line = line.rstrip()
-                if not taxonomyAComplete:
-                    taxonomyA.append(line)
-                elif not taxonomyBComplete:
-                    taxonomyB.append(line)
-                else: articulations.append(line)
-    return e3_model.Tap(config['defaultIsCoverage'], config['defaultIsSiblingDisjointness'], config['defaultRegions'], taxonomyA, taxonomyB, articulations)
+        if line.startswith("articulation"):
+            return taxonomies
+        if not taxonomiesComplete:
+            taxonomy.append(line)
+    return taxonomies
+    
+def get_articulations(cleantax):
+    articulations = []
+    articulationStarts = False
+    for line in cleantax:
+        line = line.rstrip()
+        if line.startswith("articulation"):
+            articulationStarts = True
+        if articulationStarts:
+            articulations.append(line)
+    return articulations
 
 def get_tap_from_name(name):
     id = get_tap_id(name)

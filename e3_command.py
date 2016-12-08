@@ -8,6 +8,7 @@ import e3_io
 from subprocess import Popen, PIPE, call
 import os
 import e3_parse
+import e3_validation
     
 @logged
 class Command(object):
@@ -207,16 +208,12 @@ class PrintTaxonomies(MiscCommand):
         MiscCommand.__init__(self)
     def run(self):
         MiscCommand.run(self)
-        indices = ['']
-        for x in range(1, len(self.tap.taxonomyA)):
-            indices.append(str(x) + ". ")
-        taxonomyALines = [x + y for x, y in zip(indices, self.tap.taxonomyA)]
-        self.output.append('\n'.join(taxonomyALines))
-        indices = ['']
-        for x in range(1, len(self.tap.taxonomyB)):
-            indices.append(str(x) + ". ")
-        taxonomyBLines = [x + y for x, y in zip(indices, self.tap.taxonomyB)]
-        self.output.append('\n'.join(taxonomyBLines))
+        for taxonomy in self.tap.taxonomies:
+            indices = ['']
+            for x in range(1, len(self.tap.taxonomy)):
+                indices.append(str(x) + ". ")
+            taxonomyLines = [x + y for x, y in zip(indices, self.tap.taxonomy)]
+            self.output.append('\n'.join(taxonomyLines))
             
 class PrintArticulations(MiscCommand):
     @copy_args_to_public_fields
@@ -301,7 +298,7 @@ class RemoveProjectHistory(MiscCommand):
         with open(e3_io.get_project_history(name), 'r') as historyFile:
             lines = historyFile.readlines()
             if self.index >= len(lines) or self.index < 0:
-                self.output.append("invalid index")
+                self.output.append("This is not a valid index")
             line = lines[self.index]
             newLines = list(lines)
             command = self.commandProvider.provide(line)
@@ -356,11 +353,17 @@ class PrintProjects(MiscCommand):
 @logged 
 class LoadTap(ModelCommand):
     @copy_args_to_public_fields
-    def __init__(self, cleanTaxFile):
+    def __init__(self, cleantaxFile):
         ModelCommand.__init__(self)
     def run(self):
         ModelCommand.run(self)
-        tap = e3_io.get_tap_from_cleantax(self.cleanTaxFile)
+        try:
+            tap = e3_io.get_tap_from_cleantax_file(self.cleantaxFile)
+        except IOError as e:
+            self.output.append("File not found.")
+            return
+        except e3_validation.ValidationException as e:
+            self.output.append(str(e))
         e3_io.set_current_tap(tap)
         e3_io.store_tap(tap)
         self.output.append("Tap: " + e3_io.get_tap_id_and_name(tap))
@@ -372,6 +375,11 @@ class AddArticulation(ModelCommand):
         ModelCommand.__init__(self)
     def run(self):
         ModelCommand.run(self)
+        try:
+            e3_validation.validate_articulation(self.articulation, self.tap.taxonomies)
+        except e3_validation.ValidationException as e:
+            self.output.append(str(e))
+            return
         self.tap.add_articulation(self.articulation)
         e3_io.set_current_tap(self.tap)
         e3_io.store_tap(self.tap)
@@ -384,12 +392,10 @@ class RemoveArticulation(ModelCommand):
         ModelCommand.__init__(self)
     def run(self):
         ModelCommand.run(self)
-        try:
-            self.tap.remove_articulation(self.articulationIndex)
-        except Exception as e:
-            #print e
-            self.output.append("Could not find an articulation with the given index")
+        if self.articulationIndex >= len(self.tap.articulations) or self.articulationIndex < 0:
+            self.output.append("This is not a valid index")
             return
+        self.tap.remove_articulation(self.articulationIndex)
         e3_io.set_current_tap(self.tap)
         e3_io.store_tap(self.tap)
         self.output.append("Tap: " + e3_io.get_tap_id_and_name(self.tap))
