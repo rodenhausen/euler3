@@ -46,12 +46,12 @@ class Euler2Command(Command):
         self.alignConsistencyCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir} -r {reasoner} -e {regions} {disjointness} {coverage} --consistency'
         self.alignMaxNCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir} -r {reasoner} -e {regions} {disjointness} {coverage} -n {maxN}'
         self.alignRepairCommand = '{eulerExecutable} align {cleantaxFile} -o {outputDir} -r {reasoner} -e {regions} {disjointness} {coverage} --repair={repairMethod}'
-        self.showIVCommand = '{eulerExecutable} show iv {cleantaxFile} -o {outputDir} --{imageFormat}';
-        self.showPWCommand = '{eulerExecutable} show -o {outputDir} pw --{imageFormat}'
-        self.showInconLatCommand = '{eulerExecutable} show -o {outputDir} inconLat --{imageFormat}'
-        self.showFourInOneCommand = '{eulerExecutable} show -o {outputDir} fourinone --{imageFormat}'
-        self.showSummaryCommand = '{eulerExecutable} show -o {outputDir} sv --{imageFormat}'
-        self.showAmbLatCommand = '{eulerExecutable} show -o {outputDir} ambLat --{imageFormat}'
+        self.showIVCommand = '{eulerExecutable} show iv {cleantaxFile} -o {outputDir} {imageFormat}';
+        self.showPWCommand = '{eulerExecutable} show -o {outputDir} pw {imageFormat}'
+        self.showInconLatCommand = '{eulerExecutable} show -o {outputDir} inconLat {imageFormat}'
+        self.showFourInOneCommand = '{eulerExecutable} show -o {outputDir} fourinone {imageFormat}'
+        self.showSummaryCommand = '{eulerExecutable} show -o {outputDir} sv {imageFormat}'
+        self.showAmbLatCommand = '{eulerExecutable} show -o {outputDir} ambLat {imageFormat}'
         self.eulerXPath = self.config['eulerXPath']
         self.reasoner = self.config['reasoner']
         self.imageViewer = self.config['imageViewer']
@@ -85,12 +85,13 @@ class Euler2Command(Command):
         # by at the same time keeping the file name minimal
         coverage = "" if self.isCoverage else "--disablecov"
         disjointness = "" if self.isSiblingDisjointness else "--disablesib"
+        imageFormat = "--svg" if self.imageFormat == "svg" else ""
         command = command.format(eulerExecutable = '{eulerExecutable}', 
                 cleantaxFile = '{cleantaxFile}', outputDir = '{outputDir}', 
                 #imageFormat = '{imageFormat}', 
                 #reasoner = '{reasoner}', 
                 repairMethod = self.repairMethod,  maxN = self.maxN, regions = self.regions, coverage = coverage, 
-                disjointness = disjointness, imageFormat = self.imageFormat, reasoner = self.reasoner)
+                disjointness = disjointness, imageFormat = imageFormat, reasoner = self.reasoner)
         stdoutFile = os.path.join(self.outputDir, '%s.stdout' % command)
         stderrFile = os.path.join(self.outputDir, '%s.stderr' % command)
         returnCodeFile = os.path.join(self.outputDir, '%s.returncode' % command)
@@ -109,11 +110,11 @@ class Euler2Command(Command):
         with open(stdoutFile, 'w+') as out:
             with open(stderrFile, 'w+') as err:
                 with open(returnCodeFile, 'w+') as rc:
-                    print command
+        #            print command
                     p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
                     stdout, stderr = p.communicate()
-                    print stdout
-                    print stderr
+        #            print stdout
+         #           print stderr
                     if "Input is inconsistent" in stdout:
                         self.isConsistent = False
                     out.write(stdout)

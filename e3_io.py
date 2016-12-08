@@ -20,14 +20,14 @@ def get_config():
             return config
     defaultConfig = {
                 'eulerXPath': os.path.join(get_home_dir(), 'git', 'EulerX'),
-                'imageViewer': 'eog {file}',
+                'imageViewer': 'xdg-open {file}',
                 'maxPossibleWorldsToShow': '5',
                 'imageFormat': 'svg',
                 'repairMethod': 'topdown',
                 'defaultIsCoverage': 'True',
                 'defaultIsSiblingDisjointness': 'True',
                 'defaultRegions': 'mnpw',
-                'reasoner': 'gringo'
+                'reasoner': 'dlv'
                 }
     config = defaultConfig
     with open(get_config_file(), 'w') as f:
