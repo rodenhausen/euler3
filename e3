@@ -10,7 +10,7 @@ import e3_io
 def main():
     logging.basicConfig(level=logging.INFO, stream=sys.stdout, format="%(levelname)s:%(name)s:%(funcName)s:%(message)s")
     config = e3_io.get_config()
-    sys.path.append(config['eulerXPath'])
+    #sys.path.append(config['eulerXPath'])
     
     run = None
     if len(sys.argv) > 1:

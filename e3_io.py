@@ -23,7 +23,7 @@ def get_config():
         if(config):
             return config
     defaultConfig = {
-                'eulerXPath': os.path.join(get_home_dir(), 'git', 'EulerX'),
+                'euler2Executable': 'euler2', #os.path.join(get_home_dir(), 'git', 'EulerX'),
                 'imageViewer': 'xdg-open {file}',
                 'maxPossibleWorldsToShow': '5',
                 'imageFormat': 'svg',
