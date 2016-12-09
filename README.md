@@ -10,7 +10,7 @@ Here we created a wrapper around the [EulerX](https://github.com/EulerProject/Eu
 * Use modular commands with single responsiblities
 * Be able to refine taxonomy alignment problem on-the-go
 * Reduced exposure to expert options
-* Reduced knowledge of the euler life-cycle
+* Reduced knowledge of the EulerX life-cycle
 * Reduced exposure to EulerX generated output data
 * Re-use existing computation results
 
