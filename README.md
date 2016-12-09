@@ -66,5 +66,5 @@ Python 2.7.x, [EulerX](https://github.com/EulerProject/EulerX)
 * Clone this repository
 * Run e3
 * If euler2 is not in your $PATH, do: 
- * e3 > set config euler2Executable = <your_path_to_EulerX_src-el>/euler2
+ * e3 > set config euler2Executable = \<your_path_to_EulerX_src-el\>/euler2
 
