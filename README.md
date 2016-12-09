@@ -7,12 +7,12 @@ The [EulerX](https://github.com/EulerProject/EulerX) toolkit developed by the Eu
 Here we created a wrapper around the [EulerX](https://github.com/EulerProject/EulerX) toolkit to achieve the following benefits.
 
 ### Benefits
-* Modular commands with single responsiblities
-* Refine taxonomy alignment problem on-the-go
-* Reduce exposure to expert options
-* Reduce required users knowledge of the euler life-cycle
-* Reduce exposure to EulerX generated output data
-* Re-use of existing computation results
+* Use modular commands with single responsiblities
+* Be able to refine taxonomy alignment problem on-the-go
+* Reduced exposure to expert options
+* Reduced knowledge of the euler life-cycle
+* Reduced exposure to EulerX generated output data
+* Re-use existing computation results
 
 ### Demo
 <a target="_blank" href="http://content.screencast.com/users/thomas.rodenhausen/folders/Jing/media/fb65bc4b-0dcf-4fce-b41c-1d4214c2aa4a/2016-10-19_1418.swf&blurover=false"><img src="https://img.youtube.com/vi/BbqY7htrY5U/0.jpg" alt="Replay a demo and inspect executed commands" 
