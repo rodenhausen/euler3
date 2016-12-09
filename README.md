@@ -68,3 +68,14 @@ Python 2.7.x, [EulerX](https://github.com/EulerProject/EulerX)
 * If euler2 is not in your $PATH, do: 
  * e3 > set config euler2Executable = \<your_path_to_EulerX_src-el\>/euler2
 
+
+### File organization
+Directory                              | Description
+-----------------------------------------------------------------|------------
+$USER_HOME/.e3 | e3 relevant files
+$USER_HOME/.e3/.config | stores the e3 configuration
+$USER_HOME/.e3/.current_tap | stores the current tap
+$USER_HOME/.e3/.current_project | stores the current project
+$USER_HOME/.e3/.names | stores the tap to name mappings
+$USER_HOME/.e3/taps | stores treated taps and their computed data
+$USER_HOME/.e3/projects | stores user-created projects, their history, commands, inputs and outputs
