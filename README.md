@@ -7,6 +7,7 @@ The [EulerX](https://github.com/EulerProject/EulerX) toolkit developed by the Eu
 Here we created a wrapper around the [EulerX](https://github.com/EulerProject/EulerX) toolkit to achieve the following benefits.
 
 ### Benefits
+* Use e3 as interactive shell or use it directly in your scripts
 * Use modular commands with single responsiblities
 * Be able to refine taxonomy alignment problem on-the-go
 * Reduced exposure to expert options
