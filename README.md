@@ -18,9 +18,6 @@ Here we created a wrapper around the [EulerX](https://github.com/EulerProject/Eu
 <a target="_blank" href="http://content.screencast.com/users/thomas.rodenhausen/folders/Jing/media/fb65bc4b-0dcf-4fce-b41c-1d4214c2aa4a/2016-10-19_1418.swf&blurover=false"><img src="https://img.youtube.com/vi/BbqY7htrY5U/0.jpg" alt="Replay a demo and inspect executed commands" 
 width="180" height="120"></a>
 
-### Prerequisites
-Python 2.7.x, [EulerX](https://github.com/EulerProject/EulerX) 
-
 ### Command-Manual
 Command                              | Description
 -----------------------------------------------------------------|------------
@@ -60,4 +57,14 @@ remove project history \<index\>				| Remove command with \<index\> and all depe
 set config \<key\>=\<value\>				| Sets the configiguration \<parameter\> with \<value\>
 print config						| Prints the configiguration settings
 reset							| Resets e3 to factory settings
+
+### Prerequisites
+Python 2.7.x, [EulerX](https://github.com/EulerProject/EulerX) 
+
+### Setup
+* Setup preqrequistis
+* Clone this repository
+* Run e3
+* If euler2 is not in your $PATH, do: 
+** e3 > set config euler2Executable = <your_path_to_EulerX_src-el>/euler2
 
