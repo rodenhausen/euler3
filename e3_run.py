@@ -21,18 +21,21 @@ class Run(object):
     def executeCommand(self, command):
         import e3_io
         if command != None:
-            command.run()
-            e3_io.append_project_history(input, command)
-            if command.get_output():
-                for output in command.get_output():
-                    print output
-            if command.get_execute_output():
-                with open(os.devnull, 'w') as devnull:
-                    for execute in command.get_execute_output():
-                        if execute == 'Exit':
-                            sys.exit()
-                        else:
-                            p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
+            try:
+                command.run()
+                e3_io.append_project_history(input, command)
+                if command.get_output():
+                    for output in command.get_output():
+                        print output
+                if command.get_execute_output():
+                    with open(os.devnull, 'w') as devnull:
+                        for execute in command.get_execute_output():
+                            if execute == 'Exit':
+                                sys.exit()
+                            else:
+                                p = Popen(execute, stdout=devnull, stderr=devnull, shell=True)
+            except Exception as e:
+                print "Something went wrong: " + str(e)
         else:
             print "Unrecognized command"
     

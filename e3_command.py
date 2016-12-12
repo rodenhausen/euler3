@@ -103,6 +103,8 @@ class Euler2Command(Command):
                 returnCode = f.read()
             if "Input is inconsistent" in stdout:
                 self.isConsistent = False
+            if returnCode and stderr:
+                print stderr
             return stdout, stderr, returnCode
         # add remaining parameters
         command = command.format(euler2Executable = self.euler2Executable, 
@@ -111,11 +113,13 @@ class Euler2Command(Command):
         with open(stdoutFile, 'w+') as out:
             with open(stderrFile, 'w+') as err:
                 with open(returnCodeFile, 'w+') as rc:
-                    print command
+                    #print command
                     p = Popen(command, stdout=PIPE, stderr=PIPE, shell=True)
                     stdout, stderr = p.communicate()
-                    print stdout
-                    print stderr
+                    #print stdout
+                    #print stderr
+                    if p.returncode and stderr:
+                        print stderr.rstrip()
                     if "Input is inconsistent" in stdout:
                         self.isConsistent = False
                     out.write(stdout)
@@ -249,9 +253,9 @@ class PrintTaxonomies(MiscCommand):
         MiscCommand.run(self)
         for taxonomy in self.tap.taxonomies:
             indices = ['']
-            for x in range(1, len(self.tap.taxonomy)):
+            for x in range(1, len(taxonomy)):
                 indices.append(str(x) + ". ")
-            taxonomyLines = [x + y for x, y in zip(indices, self.tap.taxonomy)]
+            taxonomyLines = [x + y for x, y in zip(indices, taxonomy)]
             self.output.append('\n'.join(taxonomyLines))
             
 class PrintArticulations(MiscCommand):

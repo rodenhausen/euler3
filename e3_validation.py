@@ -14,8 +14,6 @@ def validate_cleantax(cleantax):
         validate_taxonomy(taxonomy)
     articulations = e3_io.get_articulations(cleantax)
     
-    if not len(articulations[0].split()) == 3:
-        raise ValidationException("Articulations head must consist of three parts")
     for articulation in articulations[1:]:
         validate_articulation(articulation, taxonomies)
         

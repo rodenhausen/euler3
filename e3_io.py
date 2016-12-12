@@ -222,6 +222,7 @@ def get_tap_from_id_or_name(name_or_id):
         return tap
 
 def get_tap_id(name):
+    name = name.strip()
     with open(get_names_file(), 'r') as namesFile:
         doc = yaml.load(namesFile)
         if doc:
