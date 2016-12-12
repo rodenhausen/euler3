@@ -33,6 +33,9 @@ Command                              | Description
 -----------------------------------------------------------------|------------
 bye							| Exit e3
 help							| Shows this help
+reset							| Resets e3 to factory settings
+set config \<key\>=\<value\>				| Sets the configiguration \<parameter\> with \<value\>
+print config						| Prints the configiguration settings
 load tap \<cleantax file\>				| Loads a tap from a cleantax file
 print tap [\<tap\>]					| Prints the current tap or the optionally provided \<tap\>
 print taxonomies [\<tap\>]				| Prints the taxonomies of the current tap or the optionally provided \<tap\>
@@ -64,9 +67,6 @@ remove project \<name\>					| Remove the project with \<name\>
 clear projects						| Clears all the projects
 print project history					| Print the project's command history
 remove project history \<index\>				| Remove command with \<index\> and all dependent commands from the project's command history
-set config \<key\>=\<value\>				| Sets the configiguration \<parameter\> with \<value\>
-print config						| Prints the configiguration settings
-reset							| Resets e3 to factory settings
 
 ### Prerequisites
 Python 2.7.x, [EulerX](https://github.com/EulerProject/EulerX) 
