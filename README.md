@@ -28,12 +28,6 @@ width="180" height="120"></a>
 <a target="_blank" href="http://content.screencast.com/users/thomas.rodenhausen/folders/Jing/media/f9be00bf-18c7-4e76-a308-4d7d5b7e4f1c/2016-12-05_1354.swf&blurover=false"><img src="https://img.youtube.com/vi/BbqY7htrY5U/0.jpg" alt="Projects" 
 width="180" height="120"></a>
 
-#### Re-use of existing computation results
-<a target="_blank" href="http://content.screencast.com/users/thomas.rodenhausen/folders/Jing/media/87bb6699-1bd4-41c2-87fe-8502bb1a9760/2016-12-09_1442.swf&blurover=false"><img src="https://img.youtube.com/vi/BbqY7htrY5U/0.jpg" alt="Re-use of existing computation results" 
-width="180" height="120"></a>
-
-
-
 ### Command-Manual
 Command                              | Description
 -----------------------------------------------------------------|------------
